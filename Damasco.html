@@ -1,0 +1,2014 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Damasco</title>
+<style>
+  :root {
+    --ink: #333333;
+    --ink-soft: #6b6b6b;
+    --ink-faint: #9a9a9a;
+    --border: #e6e9ea;
+    --bg-page: #f8fbfb;
+    --bg-card: #ffffff;
+    --error: #b3261e;
+    --error-tint: #fbeceb;
+    --radius: 12px;
+    --radius-sm: 8px;
+
+    --teal-1: #8fc2c5;
+    --teal-2: #5a9ea2;
+    --teal-3: #3d7478;
+    --teal-tint: #eef6f6;
+    --teal-gradient: linear-gradient(135deg, var(--teal-1) 0%, var(--teal-2) 55%, var(--teal-3) 100%);
+
+    --amber: #b8912c;
+    --amber-tint: #fbf3e2;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Inter", Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg-page);
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input { font-family: inherit; }
+
+  /* ---------- Top bar ---------- */
+  .topbar-row {
+    position: fixed; top: 10px; left: 16px; right: 16px; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    pointer-events: none;
+  }
+  .topbar-row > * { pointer-events: auto; }
+
+  .glass-pill {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 8px 24px rgba(20, 40, 42, 0.10), 0 1px 2px rgba(20, 40, 42, 0.05);
+    border-radius: 18px;
+  }
+
+  .brand-pill { display: flex; align-items: center; gap: 8px; padding: 6px 12px; flex-shrink: 0; }
+  .brand-pill span.name { font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; color: var(--ink); }
+
+  .utility-pill { display: flex; align-items: center; gap: 0; padding: 7px 8px; flex-shrink: 0; overflow: hidden; }
+  .utility-tray { display: flex; align-items: center; gap: 4px; max-width: 0; opacity: 0; overflow: hidden; transition: max-width 0.3s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease; }
+  .utility-pill.open .utility-tray { max-width: 140px; opacity: 1; }
+
+  .pill-toggle-btn { width: 22px; height: 22px; border-radius: 50%; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; padding: 0; margin-left: 2px; }
+  .pill-toggle-btn:hover { background: rgba(0,0,0,0.04); }
+  .pill-toggle-btn svg { width: 14px; height: 14px; stroke: var(--ink-faint); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .pill-toggle-btn .icon-close { display: none; }
+  .utility-pill.open .pill-toggle-btn .icon-open { display: none; }
+  .utility-pill.open .pill-toggle-btn .icon-close { display: block; }
+
+  .pill-divider { width: 1px; height: 20px; background: var(--border); margin: 0 3px; flex-shrink: 0; }
+
+  .avatar-chip { width: 28px; height: 28px; border-radius: 50%; background: var(--teal-gradient); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 600; flex-shrink: 0; margin-left: 2px; }
+
+  /* ---------- Glass dock -> bottom bar on mobile ---------- */
+  .topnav-fixed {
+    position: fixed; top: auto; bottom: 16px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    left: 50%; transform: translateX(-50%); z-index: 60;
+    display: flex; align-items: flex-end; gap: 4px;
+    padding: 5px 10px 4px;
+    max-width: calc(100vw - 32px);
+    overflow-x: auto; scrollbar-width: none;
+    background: rgba(150, 158, 160, 0.28);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.30);
+    box-shadow: 0 12px 34px rgba(20, 30, 32, 0.22), inset 0 1px 0 rgba(255,255,255,0.25);
+    border-radius: 22px;
+  }
+  .topnav-fixed::-webkit-scrollbar { display: none; }
+
+  .dock-item { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 13px; cursor: pointer; -webkit-tap-highlight-color: transparent; flex-shrink: 0; background: none; border: none; position:relative; }
+  .dock-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transform-origin: bottom center; will-change: transform; }
+  .dock-icon svg { width: 20px; height: 20px; stroke: var(--teal-2); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .dock-item.active .dock-icon svg { stroke: var(--teal-3); stroke-width: 2.2; }
+  .dock-label { font-size: 9.5px; font-weight: 600; color: var(--teal-2); white-space: nowrap; }
+  .dock-item.active .dock-label { color: var(--teal-3); font-weight: 700; }
+  .dock-run-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--teal-3); margin-top: -2px; opacity: 0; }
+  .dock-item.active .dock-run-dot { opacity: 1; }
+  .dock-badge { position:absolute; top:-3px; right:6px; background:var(--error); color:#fff; font-size:9px; font-weight:800; border-radius:20px; padding:1px 5px; min-width:14px; text-align:center; }
+
+  /* ---------- Main content ---------- */
+  .main { max-width: 640px; margin: 0 auto; padding: 68px 16px 96px; }
+
+  .page-heading { margin-bottom: 16px; }
+  .page-heading h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+  .page-heading p { margin: 3px 0 0; font-size: 12.5px; color: var(--ink-soft); }
+
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 16px; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ---------- Crear orden CTA ---------- */
+  .create-order-cta {
+    display: flex; align-items: center; gap: 12px; padding: 16px;
+    background: var(--teal-gradient); border-radius: var(--radius); color: #fff;
+    cursor: pointer; margin-bottom: 16px; border: none; width: 100%; text-align: left;
+  }
+  .create-order-cta .cta-icon { width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.22); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .create-order-cta .cta-icon svg { width: 20px; height: 20px; stroke:#fff; stroke-width:2.2; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  .create-order-cta .cta-title { font-size: 14.5px; font-weight: 700; }
+  .create-order-cta .cta-sub { font-size: 12px; opacity: 0.85; margin-top: 1px; }
+
+  /* ---------- KPI cards ---------- */
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .kpi-card { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; }
+  .kpi-top { display: flex; align-items: center; justify-content: space-between; }
+  .kpi-label { font-size: 12px; color: var(--ink-soft); font-weight: 500; line-height:1.2; }
+  .kpi-icon { width: 28px; height: 28px; border-radius: 8px; background: var(--teal-tint); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .kpi-icon svg { width: 15px; height: 15px; stroke: var(--teal-3); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .kpi-icon.warn { background: var(--amber-tint); }
+  .kpi-icon.warn svg { stroke: var(--amber); }
+  .kpi-value { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .kpi-note { font-size: 11.5px; font-weight: 600; color: var(--ink-faint); }
+  .kpi-note.good { color: var(--teal-3); }
+  .kpi-note.bad { color: var(--error); }
+
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; gap: 12px; }
+  .card-header h2 { font-size: 15px; font-weight: 600; margin: 0; }
+  .card-header .card-sub { font-size: 12px; color: var(--ink-faint); display: block; margin-top: 2px; }
+
+  /* ---------- Buttons ---------- */
+  .btn-primary { background: var(--teal-3); color: #fff; border: none; border-radius: 10px; padding: 13px 16px; font-weight: 600; font-size: 14px; cursor: pointer; width:100%; }
+  .btn-primary:disabled { background:#c9d3d3; cursor:not-allowed; }
+  .btn-secondary { background: var(--teal-tint); color: var(--teal-3); border: none; border-radius: 10px; padding: 11px 16px; font-weight: 600; font-size: 13.5px; cursor: pointer; width:100%; }
+  .btn-ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--border); border-radius: 10px; padding: 11px 16px; font-weight: 600; font-size: 13.5px; cursor: pointer; width:100%; }
+  .btn-back { background: none; border: none; color: var(--ink-soft); font-size: 13px; font-weight: 600; cursor: pointer; padding: 6px 0; display:flex; align-items:center; gap:4px; }
+  .btn-back svg { width: 15px; height: 15px; stroke: var(--ink-soft); stroke-width: 2.2; }
+
+  .fab {
+    position: fixed; right: 16px; bottom: 84px;
+    bottom: max(84px, calc(env(safe-area-inset-bottom) + 68px));
+    width: 52px; height: 52px; border-radius: 50%; background: var(--teal-3); color: #fff;
+    border: none; box-shadow: 0 10px 24px rgba(61,116,120,0.4); display:flex; align-items:center; justify-content:center;
+    cursor: pointer; z-index: 55;
+  }
+  .fab svg { width: 24px; height: 24px; stroke:#fff; stroke-width:2.2; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+
+  /* ---------- Chips ---------- */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: var(--teal-tint); border: 1px solid var(--border); color: var(--ink); padding: 8px 13px; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer; user-select: none; }
+  .chip.selected { background: var(--teal-3); color: #fff; border-color: var(--teal-3); }
+
+  .inline-add { display: flex; gap: 8px; margin-top: 10px; }
+  .inline-add input { flex: 1; background: var(--bg-page); border: 1px solid var(--border); color: var(--ink); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; }
+  .inline-add input::placeholder { color: var(--ink-faint); }
+  .inline-add button { background: var(--teal-3); color: #fff; border: none; border-radius: 10px; padding: 0 15px; font-weight: 700; font-size: 13.5px; cursor: pointer; }
+
+  .basket { margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 10px; }
+  .basket-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; font-size: 13.5px; font-weight: 600; }
+  .basket-item button { background: var(--error-tint); border: none; color: var(--error); font-size: 12px; cursor: pointer; padding: 4px 9px; border-radius: 7px; font-weight: 700; }
+  .empty-hint { color: var(--ink-faint); font-size: 12.5px; padding: 6px 0; }
+
+  /* ---------- Tickets ---------- */
+  .ticket { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 15px; margin-bottom: 10px; border-left: 4px solid var(--teal-3); }
+  .ticket.warn { border-left-color: var(--amber); }
+  .ticket.urgent { border-left-color: var(--error); }
+  .ticket-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .ticket-mesa { font-size: 10.5px; color: var(--ink-faint); font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
+  .ticket-persona { font-size: 14.5px; font-weight: 700; margin-top: 2px; }
+  .ticket-item { font-size: 13px; margin-top: 2px; color: var(--ink-soft); font-weight: 500; }
+  .time-pill { font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px; white-space: nowrap; background: var(--teal-tint); color: var(--teal-3); }
+  .ticket.warn .time-pill { background: var(--amber-tint); color: var(--amber); }
+  .ticket.urgent .time-pill { background: var(--error-tint); color: var(--error); }
+  .done-btn { margin-top: 10px; width: 100%; background: var(--bg-page); color: var(--ink); border: 1px solid var(--border); border-radius: 9px; padding: 9px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+  .empty-state { text-align: center; color: var(--ink-faint); padding: 40px 20px; font-size: 13px; }
+
+  /* ---------- Mesas ---------- */
+  .mesa-card { margin-bottom: 10px; cursor: pointer; }
+  .mesa-top { display: flex; justify-content: space-between; align-items: center; }
+  .mesa-name { font-size: 15px; font-weight: 700; }
+  .mesa-meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .mesa-tag { font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 999px; background: var(--teal-tint); color: var(--teal-3); }
+  .mesa-tag.empty { background: var(--bg-page); color: var(--ink-faint); }
+  .mesa-tag.urgent { background: var(--error-tint); color: var(--error); }
+
+  /* ---------- Inventario ---------- */
+  .inv-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .inv-item:last-child { border-bottom: none; }
+  .inv-name { font-size: 13.5px; font-weight: 600; }
+  .inv-low { font-size: 10.5px; font-weight: 700; color: var(--error); margin-top: 2px; display:block; }
+  .inv-stepper { display: flex; align-items: center; gap: 10px; }
+  .inv-stepper button { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-page); font-size: 15px; font-weight: 700; color: var(--teal-3); cursor: pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+  .inv-count { font-size: 14px; font-weight: 700; min-width: 34px; text-align: center; }
+
+  /* ---------- Modal: card centrada en desktop/tablet, pantalla completa desde abajo en móvil ---------- */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(20,30,32,0.45); backdrop-filter: blur(3px);
+    z-index: 70; display: none; align-items: center; justify-content: center; padding: 28px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-sheet {
+    background: var(--bg-page); width: 100%; max-width: 760px;
+    border-radius: 22px; padding: 22px 22px calc(22px + env(safe-area-inset-bottom));
+    max-height: 88vh; overflow-y: auto;
+    animation: scaleIn 0.2s cubic-bezier(0.22,1,0.36,1);
+    box-shadow: 0 30px 60px rgba(20,30,32,0.3);
+  }
+  @keyframes scaleIn { from { transform: scale(0.96); opacity:0; } to { transform: scale(1); opacity:1; } }
+
+  @media (max-width: 768px) {
+    .modal-backdrop { align-items: flex-end; justify-content: stretch; padding: 0; }
+    .modal-sheet {
+      max-width: 100%; width: 100%; height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh;
+      border-radius: 0; padding: calc(18px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
+      animation: slideUp 0.25s cubic-bezier(0.22,1,0.36,1);
+      box-shadow: none;
+    }
+  }
+  @keyframes slideUp { from { transform: translateY(30px); opacity:0.4; } to { transform: translateY(0); opacity:1; } }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .modal-head h2 { font-size: 16px; font-weight: 700; margin: 0; }
+  .modal-close { width: 30px; height: 30px; border-radius: 50%; border: none; background: var(--border); color: var(--ink-soft); font-size: 15px; cursor: pointer; flex-shrink:0; }
+
+  /* ---------- Step progress ---------- */
+  .step-dots { display: flex; gap: 6px; margin: 10px 0 18px; }
+  .step-dots .dot { flex:1; height: 4px; border-radius: 4px; background: var(--border); }
+  .step-dots .dot.done { background: var(--teal-3); }
+  .step-dots .dot.current { background: var(--teal-2); }
+
+  .name-input-big { width: 100%; padding: 16px 14px; font-size: 17px; font-weight: 600; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-card); color: var(--ink); }
+  .name-input-big::placeholder { color: var(--ink-faint); font-weight: 500; }
+
+  .search-box { position: relative; margin-bottom: 12px; }
+  .search-box svg { position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; stroke:var(--ink-faint); stroke-width:2; fill:none; }
+  .search-box input { width:100%; padding: 11px 12px 11px 36px; border:1px solid var(--border); border-radius:10px; background:var(--bg-card); font-size:13.5px; color:var(--ink); }
+  .search-box input::placeholder { color: var(--ink-faint); }
+  .add-custom-hint { background: var(--teal-tint); border:1px dashed var(--teal-2); color: var(--teal-3); border-radius: 10px; padding:10px 12px; font-size:13px; font-weight:600; cursor:pointer; margin-bottom:8px; }
+
+  /* ---------- Selector de productos por categorías ---------- */
+  .tab-row { display:flex; gap:6px; background:var(--bg-page); border-radius:12px; padding:4px; margin-bottom:10px; }
+  .tab-btn { flex:1; border:none; background:transparent; padding:9px 4px; border-radius:9px; font-size:12.5px; font-weight:700; color:var(--ink-soft); cursor:pointer; }
+  .tab-btn.active { background:var(--bg-card); color:var(--teal-3); box-shadow:0 2px 6px rgba(20,40,42,0.08); }
+
+  .category-grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; max-height:52vh; overflow-y:auto; padding-bottom:2px; }
+  .category-card {
+    border:none; border-radius:14px; padding:20px 10px; color:#fff; font-weight:700; font-size:13.5px;
+    text-align:center; cursor:pointer; min-height:64px; display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+  }
+  .category-card:active { transform: scale(0.98); }
+
+  .category-items-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .category-items-header .cih-dot { width:14px; height:14px; border-radius:5px; flex-shrink:0; }
+  .category-items-header .cih-title { font-size:15px; font-weight:700; }
+
+  .items-col { max-height:52vh; overflow-y:auto; background:var(--bg-card); border:1px solid var(--border); border-radius:12px; }
+  .item-row { padding:13px 14px; border-bottom:1px solid var(--border); font-size:13.5px; font-weight:600; cursor:pointer; color:var(--ink); display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .item-row:last-child { border-bottom:none; }
+  .item-row:active { background: var(--teal-tint); }
+  .item-row-price { font-size:12px; font-weight:700; color:var(--ink-faint); flex-shrink:0; }
+  .items-col-empty { padding:20px 14px; font-size:12.5px; color:var(--ink-faint); }
+
+  /* ---------- Resumen de orden ---------- */
+  .order-summary-card { margin-top:14px; }
+  .order-summary-card .card-header h2 { display:flex; align-items:center; gap:6px; }
+  .summary-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .summary-row:last-child { border-bottom:none; }
+  .summary-row-info { flex:1; min-width:0; }
+  .summary-row-name { font-size:13.5px; font-weight:700; }
+  .summary-row-price { font-size:12px; color:var(--ink-faint); font-weight:600; margin-top:1px; }
+  .summary-row-controls { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .qty-stepper { display:flex; align-items:center; gap:8px; background:var(--bg-page); border-radius:999px; padding:4px 6px; }
+  .qty-stepper button { width:24px; height:24px; border-radius:50%; border:none; background:var(--bg-card); border:1px solid var(--border); color:var(--teal-3); font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+  .qty-stepper span { font-size:13px; font-weight:700; min-width:16px; text-align:center; }
+  .remove-item-btn { width:26px; height:26px; border-radius:50%; border:none; background:var(--error-tint); color:var(--error); font-size:13px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; flex-shrink:0; }
+  .summary-row-subtotal { font-size:13px; font-weight:700; color:var(--ink); min-width:52px; text-align:right; flex-shrink:0; }
+  .order-total-row { display:flex; justify-content:space-between; align-items:center; padding-top:12px; margin-top:4px; }
+  .order-total-label { font-size:13.5px; font-weight:700; color:var(--ink-soft); }
+  .order-total-value { font-size:19px; font-weight:800; color:var(--teal-3); }
+  .summary-row { flex-direction:column; align-items:stretch; gap:8px; }
+  .summary-row-main { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .note-input {
+    width:100%; padding:9px 11px; border:1px solid var(--border); border-radius:9px;
+    background:var(--bg-page); font-size:12.5px; color:var(--ink);
+  }
+  .note-input::placeholder { color: var(--ink-faint); }
+  .ticket-note { font-size:12px; color:var(--amber); font-weight:600; margin-top:4px; display:flex; align-items:flex-start; gap:5px; }
+  .ticket-note svg { width:13px; height:13px; stroke:var(--amber); stroke-width:2; fill:none; flex-shrink:0; margin-top:1px; }
+  .ticket-chevron { width:16px; height:16px; stroke:var(--ink-faint); stroke-width:2; fill:none; flex-shrink:0; }
+  .order-number-badge {
+    display:inline-block; font-size:11px; font-weight:800; color:var(--teal-3); background:var(--teal-tint);
+    padding:2px 7px; border-radius:6px; margin-right:7px; vertical-align:middle; letter-spacing:0.2px;
+  }
+
+  /* ---------- Modal: detalle de orden ---------- */
+  .vo-name-input {
+    width:100%; border:none; background:transparent; font-size:19px; font-weight:800; color:var(--ink);
+    padding:0; margin-bottom:2px;
+  }
+  .vo-name-input:focus { outline:none; border-bottom:1.5px solid var(--teal-2); }
+  .vo-completion-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:12px 0 18px; }
+  .vo-paid-banner {
+    display:flex; align-items:center; gap:10px; background:var(--teal-tint); color:var(--teal-3);
+    border-radius:12px; padding:13px 15px; font-size:13px; font-weight:700; margin:12px 0 18px;
+  }
+  .vo-paid-banner svg { width:18px; height:18px; stroke:var(--teal-3); stroke-width:2; fill:none; flex-shrink:0; }
+
+  /* ---------- Mini modal: método de pago ---------- */
+  .mini-modal-backdrop {
+    position: fixed; inset: 0; background: rgba(20,30,32,0.45); backdrop-filter: blur(3px);
+    z-index: 80; display: none; align-items: center; justify-content: center; padding: 24px;
+  }
+  .mini-modal-backdrop.open { display: flex; }
+  .mini-modal-sheet {
+    background: var(--bg-page); width: 100%; max-width: 340px; border-radius: 20px;
+    padding: 20px; box-shadow: 0 30px 60px rgba(20,30,32,0.3); animation: scaleIn 0.2s cubic-bezier(0.22,1,0.36,1);
+  }
+  .payment-option {
+    width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 15px;
+    border: 1.5px solid var(--border); border-radius: 12px; background: var(--bg-card);
+    cursor: pointer; font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 10px;
+  }
+  .payment-option:last-child { margin-bottom: 0; }
+  .payment-option:active { background: var(--teal-tint); }
+  .payment-option .po-icon {
+    width: 34px; height: 34px; border-radius: 10px; background: var(--teal-tint);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .payment-option .po-icon svg { width: 17px; height: 17px; stroke: var(--teal-3); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .vo-completion-btn {
+    padding:14px 10px; border:1.5px solid var(--border); border-radius:12px; text-align:center; cursor:pointer;
+    background:var(--bg-card); display:flex; flex-direction:column; align-items:center; gap:7px;
+  }
+  .vo-completion-btn .mc-icon { width:32px; height:32px; border-radius:9px; background:var(--teal-tint); display:flex; align-items:center; justify-content:center; }
+  .vo-completion-btn .mc-icon svg { width:16px; height:16px; stroke:var(--teal-3); stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  .vo-completion-btn.paid .mc-icon { background:var(--amber-tint); }
+  .vo-completion-btn.paid .mc-icon svg { stroke:var(--amber); }
+  .vo-completion-btn .mc-label { font-size:12.5px; font-weight:700; }
+
+  .vo-item-row { display:flex; align-items:flex-start; gap:10px; padding:11px 0; border-bottom:1px solid var(--border); }
+  .vo-item-row:last-child { border-bottom:none; }
+  .vo-check {
+    width:24px; height:24px; border-radius:7px; border:2px solid var(--border); background:var(--bg-card);
+    flex-shrink:0; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; margin-top:1px;
+  }
+  .vo-check svg { width:13px; height:13px; stroke:#fff; stroke-width:3; fill:none; display:none; }
+  .vo-check.checked { background:var(--teal-3); border-color:var(--teal-3); }
+  .vo-check.checked svg { display:block; }
+  .vo-item-info { flex:1; min-width:0; }
+  .vo-item-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .vo-item-name { font-size:13.5px; font-weight:700; }
+  .vo-item-name.done { color:var(--ink-faint); text-decoration:line-through; }
+  .vo-item-sub { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:6px; }
+  .vo-item-price { font-size:11.5px; color:var(--ink-faint); font-weight:600; }
+
+  .mesa-choice-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 6px; }
+  .mesa-choice-card { padding: 16px 12px; border: 1.5px solid var(--border); border-radius: 12px; text-align:center; cursor:pointer; background:var(--bg-card); }
+  .mesa-choice-card.selected { border-color: var(--teal-3); background: var(--teal-tint); }
+  .mesa-choice-card .mc-icon { width:34px; height:34px; border-radius:10px; background:var(--teal-tint); display:flex; align-items:center; justify-content:center; margin:0 auto 8px; }
+  .mesa-choice-card.selected .mc-icon { background: #fff; }
+  .mesa-choice-card .mc-icon svg { width:17px; height:17px; stroke:var(--teal-3); stroke-width:1.8; fill:none; }
+  .mesa-choice-card .mc-label { font-size: 12.5px; font-weight:700; }
+
+  .order-summary { background: var(--teal-tint); border-radius: 10px; padding: 12px 14px; margin: 14px 0; font-size:13px; color:var(--teal-3); font-weight:600; }
+
+  .toast { position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 13px; opacity: 0; transition: all .25s ease; pointer-events: none; z-index: 80; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ---------- Login ---------- */
+  #loginScreen {
+    position: fixed; inset: 0; z-index: 200; background: var(--bg-page);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .login-card {
+    width: 100%; max-width: 340px; text-align: center;
+  }
+  .login-card .login-title { font-size: 22px; font-weight: 800; margin: 0 0 4px; letter-spacing:-0.02em; }
+  .login-card .login-sub { font-size: 13px; color: var(--ink-soft); margin: 0 0 28px; }
+  .login-user-name { font-size: 14px; font-weight: 700; color: var(--teal-3); margin-top: 14px; min-height: 20px; }
+  .pin-dots { display: flex; justify-content: center; gap: 16px; margin-bottom: 10px; }
+  .pin-dots span {
+    width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--teal-2); background: transparent; transition: background .15s ease;
+  }
+  .pin-dots span.filled { background: var(--teal-3); border-color: var(--teal-3); }
+  .pin-dots.shake { animation: pinShake .35s ease; }
+  @keyframes pinShake { 0%,100%{transform:translateX(0);} 20%{transform:translateX(-10px);} 40%{transform:translateX(10px);} 60%{transform:translateX(-6px);} 80%{transform:translateX(6px);} }
+  .pin-error { color: var(--error); font-size: 12.5px; font-weight: 700; min-height: 18px; margin-bottom: 6px; }
+  .keypad { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 18px; }
+  .keypad button {
+    aspect-ratio: 1; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-card);
+    font-size: 20px; font-weight: 700; color: var(--ink); cursor: pointer;
+  }
+  .keypad button:active { background: var(--teal-tint); }
+  .keypad button.keypad-empty { visibility: hidden; }
+  .keypad button.keypad-back { font-size: 15px; color: var(--ink-soft); border: none; background: none; }
+
+  /* ---------- Barra de usuario / logout ---------- */
+  .avatar-wrap { position: relative; }
+  .avatar-chip { cursor: pointer; }
+  .avatar-menu {
+    position: absolute; top: calc(100% + 10px); right: 0; min-width: 170px;
+    background: var(--bg-card); border-radius: 14px; box-shadow: 0 14px 34px rgba(20,30,32,0.18);
+    border: 1px solid var(--border); padding: 12px; display: none; z-index: 90;
+  }
+  .avatar-menu.open { display: block; }
+  .avatar-menu-name { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); padding: 2px 4px 10px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .avatar-menu-logout {
+    width: 100%; display: flex; align-items: center; gap: 8px; background: var(--error-tint); color: var(--error);
+    border: none; border-radius: 10px; padding: 10px 12px; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .avatar-menu-logout svg { width: 15px; height: 15px; stroke: var(--error); stroke-width: 2; }
+</style>
+</head>
+<body>
+
+  <!-- ===== Login ===== -->
+  <div id="loginScreen">
+    <div class="login-card">
+      <div class="login-title">Damasco</div>
+      <div class="login-sub">Introduce tu clave de acceso</div>
+      <div class="pin-dots" id="pinDots">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="pin-error" id="pinError"></div>
+      <div class="keypad" id="keypad">
+        <button onclick="pinPress('1')">1</button>
+        <button onclick="pinPress('2')">2</button>
+        <button onclick="pinPress('3')">3</button>
+        <button onclick="pinPress('4')">4</button>
+        <button onclick="pinPress('5')">5</button>
+        <button onclick="pinPress('6')">6</button>
+        <button onclick="pinPress('7')">7</button>
+        <button onclick="pinPress('8')">8</button>
+        <button onclick="pinPress('9')">9</button>
+        <button class="keypad-empty"></button>
+        <button onclick="pinPress('0')">0</button>
+        <button class="keypad-back" onclick="pinBackspace()">⌫</button>
+      </div>
+      <div class="login-user-name" id="loginUserName"></div>
+    </div>
+  </div>
+
+  <div id="appRoot" style="display:none;">
+
+  <div class="topbar-row">
+    <div class="brand-pill glass-pill">
+      <span class="name">Damasco</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; pointer-events:auto;">
+      <div class="utility-pill glass-pill" id="utilityPill">
+        <div class="utility-tray" id="utilityTray">
+          <input id="searchInput" placeholder="Buscar mesa..." style="border:none;background:transparent;font-size:12.5px;width:90px;outline:none;color:var(--ink);" oninput="render()">
+          <div class="pill-divider"></div>
+        </div>
+        <button class="pill-toggle-btn" id="utilityToggle" aria-label="Buscar">
+          <svg viewBox="0 0 24 24" class="icon-open"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <svg viewBox="0 0 24 24" class="icon-close"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div class="avatar-wrap" id="avatarWrap">
+        <div class="avatar-chip" id="avatarChip" onclick="toggleAvatarMenu(event)">TU</div>
+        <div class="avatar-menu" id="avatarMenu">
+          <div class="avatar-menu-name" id="avatarMenuName"></div>
+          <button class="avatar-menu-logout" onclick="handleLogoutClick()">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="topnav-fixed" id="dockNav">
+    <button class="dock-item active" data-screen="ordenes">
+      <span class="dock-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+      <span class="dock-label">Órdenes</span>
+      <span class="dock-run-dot"></span>
+      <span class="dock-badge" id="dockBadgeOrdenes" style="display:none;">0</span>
+    </button>
+    <button class="dock-item" data-screen="entregados">
+      <span class="dock-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3L16 10"/></svg></span>
+      <span class="dock-label">Entregados</span>
+      <span class="dock-run-dot"></span>
+      <span class="dock-badge" id="dockBadgeEntregados" style="display:none;">0</span>
+    </button>
+    <button class="dock-item" data-screen="pagadas">
+      <span class="dock-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+      <span class="dock-label">Pagadas</span>
+      <span class="dock-run-dot"></span>
+    </button>
+    <button class="dock-item" data-screen="inventario">
+      <span class="dock-icon"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span>
+      <span class="dock-label">Inventario</span>
+      <span class="dock-run-dot"></span>
+      <span class="dock-badge" id="dockBadgeInv" style="display:none;">0</span>
+    </button>
+  </nav>
+
+  <main class="main">
+
+    <!-- ================= ÓRDENES ================= -->
+    <section class="screen active" id="screen-ordenes">
+      <div class="page-heading">
+        <h1>Órdenes</h1>
+        <p>Crea una orden nueva o revisa la cola en vivo.</p>
+      </div>
+
+      <button class="create-order-cta" onclick="openOrderModal()">
+        <span class="cta-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
+        <span>
+          <div class="cta-title">Crear orden</div>
+          <div class="cta-sub">Nombre del cliente → productos → mesa</div>
+        </span>
+      </button>
+
+      <div class="kpi-grid">
+        <div class="card kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Pedidos<br>pendientes</span>
+            <span class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
+          </div>
+          <div class="kpi-value" id="statPending">0</div>
+          <span class="kpi-note" id="statPendingNote">en cola ahora</span>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Mesas<br>activas</span>
+            <span class="kpi-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11M19 8v11M9 8v11M15 8v11"/></svg></span>
+          </div>
+          <div class="kpi-value" id="statTables">0</div>
+          <span class="kpi-note">con pedidos</span>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Espera<br>más larga</span>
+            <span class="kpi-icon warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
+          </div>
+          <div class="kpi-value" id="statMaxWait">0m</div>
+          <span class="kpi-note" id="statMaxWaitNote">sin servir</span>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Servidos<br>hoy</span>
+            <span class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+          </div>
+          <div class="kpi-value" id="statDone">0</div>
+          <span class="kpi-note good">completados</span>
+        </div>
+      </div>
+
+      <div class="card-header" style="padding:0 2px;"><div><h2>Cola de pedidos</h2></div></div>
+      <div id="queueList"></div>
+    </section>
+
+    <!-- ================= ENTREGADOS ================= -->
+    <section class="screen" id="screen-entregados">
+      <div class="page-heading">
+        <h1>Entregados</h1>
+        <p>Órdenes ya servidas por completo, pendientes de cobrar.</p>
+      </div>
+      <div id="entregadosList"></div>
+    </section>
+
+    <!-- ================= PAGADAS ================= -->
+    <section class="screen" id="screen-pagadas">
+      <div class="page-heading">
+        <h1>Pagadas</h1>
+        <p>Registro de todas las órdenes ya cobradas.</p>
+      </div>
+
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-header"><div><h2>Filtrar por fecha</h2></div></div>
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <div style="font-size:11.5px; color:var(--ink-faint); font-weight:600; margin-bottom:4px;">Desde</div>
+            <input type="date" id="pagadasFromDate" onchange="render()" style="width:100%; border:1px solid var(--border); border-radius:10px; padding:9px 10px; font-size:13px; background:var(--bg-page); color:var(--ink);">
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:11.5px; color:var(--ink-faint); font-weight:600; margin-bottom:4px;">Hasta</div>
+            <input type="date" id="pagadasToDate" onchange="render()" style="width:100%; border:1px solid var(--border); border-radius:10px; padding:9px 10px; font-size:13px; background:var(--bg-page); color:var(--ink);">
+          </div>
+        </div>
+        <button class="btn-ghost" style="margin-top:10px;" onclick="clearPagadasDateFilter()">Ver todas las fechas</button>
+        <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:13px; font-weight:700; color:var(--teal-3);" id="pagadasSummary">0 órdenes · Total 0.00 €</div>
+      </div>
+
+      <div id="pagadasList"></div>
+    </section>
+
+    <!-- ================= INVENTARIO ================= -->
+    <section class="screen" id="screen-inventario">
+      <div class="page-heading">
+        <h1>Inventario</h1>
+        <p>Control rápido de stock de barra y cocina.</p>
+      </div>
+
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-header"><div><h2>Añadir producto</h2></div></div>
+        <div class="inline-add">
+          <input id="newInvName" placeholder="Nombre del producto">
+          <input id="newInvStock" type="number" placeholder="Stock" style="max-width:70px;flex:none;">
+          <button onclick="addInventoryItem()">+</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div><h2>Stock actual</h2><span class="card-sub">Toca +/- para ajustar cantidades</span></div></div>
+        <div id="inventoryList"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <button class="fab" id="fabNewOrder" onclick="openOrderModal()">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <!-- ===== Modal: nueva orden (wizard 3 pasos) ===== -->
+  <div class="modal-backdrop" id="orderModal">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <h2 id="wizardTitle">Nueva orden</h2>
+        <button class="modal-close" onclick="closeOrderModal()">✕</button>
+      </div>
+      <div class="step-dots" id="stepDots">
+        <div class="dot" data-step="1"></div>
+        <div class="dot" data-step="2"></div>
+        <div class="dot" data-step="3"></div>
+      </div>
+
+      <!-- Paso 1: nombre -->
+      <div id="wizardStep1">
+        <input id="customerNameInput" class="name-input-big" placeholder="Nombre del cliente" autocomplete="off">
+        <button class="btn-primary" id="step1NextBtn" style="margin-top:16px;" disabled onclick="goToStep(2)">Continuar</button>
+      </div>
+
+      <!-- Paso 2: productos -->
+      <div id="wizardStep2" style="display:none;">
+        <button class="btn-back" onclick="goToStep(1)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Volver</button>
+        <div class="search-box">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="productSearch" placeholder="Buscar producto..." oninput="renderProductResults()">
+        </div>
+        <div id="addCustomHint"></div>
+
+        <!-- Vista de búsqueda (cuando hay texto) -->
+        <div class="chip-row" id="productResults"></div>
+
+        <!-- Vista de categorías (cuando no hay búsqueda) -->
+        <div id="categoryBrowser">
+          <div class="tab-row" id="tabRow"></div>
+
+          <div id="categoryGridView">
+            <div class="category-grid" id="categoryGrid"></div>
+          </div>
+
+          <div id="categoryItemsView" style="display:none;">
+            <button class="btn-back" onclick="backToCategories()"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Categorías</button>
+            <div class="category-items-header" id="categoryItemsHeader"></div>
+            <div class="items-col" id="itemsCol"></div>
+          </div>
+        </div>
+
+        <div class="card order-summary-card" id="orderSummaryCard" style="display:none;">
+          <div class="card-header"><div><h2>Resumen de orden</h2></div></div>
+          <div id="summaryRows"></div>
+          <div class="order-total-row">
+            <span class="order-total-label">Total</span>
+            <span class="order-total-value" id="orderTotalValue">0.00 €</span>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="step2NextBtn" style="margin-top:16px;" disabled onclick="goToStep(3)">Continuar</button>
+      </div>
+
+      <!-- Paso 3: mesa -->
+      <div id="wizardStep3" style="display:none;">
+        <button class="btn-back" onclick="goToStep(2)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Volver</button>
+
+        <div class="mesa-choice-grid">
+          <div class="mesa-choice-card" id="choiceMesaSi" onclick="chooseMesaOption('si')">
+            <div class="mc-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11M19 8v11M9 8v11M15 8v11"/></svg></div>
+            <div class="mc-label">Mesa asignada</div>
+          </div>
+          <div class="mesa-choice-card" id="choiceMesaNo" onclick="chooseMesaOption('no')">
+            <div class="mc-icon"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+            <div class="mc-label">Sin mesa asignada</div>
+          </div>
+        </div>
+
+        <div id="mesaPickerArea" style="display:none; margin-top:14px;">
+          <div class="chip-row" id="wizardTableChips"></div>
+          <div class="inline-add">
+            <input id="wizardNewTableInput" placeholder="Nº o nombre de mesa nueva">
+            <button onclick="addTableInWizard()">Añadir</button>
+          </div>
+        </div>
+
+        <div class="order-summary" id="orderSummary"></div>
+        <button class="btn-primary" id="createOrderBtn" disabled onclick="confirmOrder()">Crear orden</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Modal: detalle de orden ===== -->
+  <div class="modal-backdrop" id="viewOrderModal">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <h2>Detalle de la orden</h2>
+        <button class="modal-close" onclick="closeViewOrderModal()">✕</button>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="order-number-badge" id="viewOrderNumberBadge">#000</span>
+        <input class="vo-name-input" id="viewOrderCustomerName" placeholder="Nombre del cliente" style="flex:1;">
+      </div>
+      <div class="mesa-meta" id="viewOrderMeta"></div>
+
+      <div id="voCompletionArea"></div>
+
+      <div class="card-header" style="padding:0 2px;"><div><h2>Productos</h2></div></div>
+      <div id="viewOrderItemsList"></div>
+
+      <button class="btn-secondary" style="margin-top:12px;" onclick="toggleAddProductPanel()">+ Añadir producto</button>
+
+      <div id="addProductPanelOrd" style="display:none; margin-top:14px;">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="productSearchOrd" placeholder="Buscar producto..." oninput="renderProductResultsOrd()">
+        </div>
+        <div id="addCustomHintOrd"></div>
+        <div class="chip-row" id="productResultsOrd"></div>
+
+        <div id="categoryBrowserOrd">
+          <div class="tab-row" id="tabRowOrd"></div>
+          <div id="categoryGridViewOrd">
+            <div class="category-grid" id="categoryGridOrd"></div>
+          </div>
+          <div id="categoryItemsViewOrd" style="display:none;">
+            <button class="btn-back" onclick="backToCategoriesOrd()"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Categorías</button>
+            <div class="category-items-header" id="categoryItemsHeaderOrd"></div>
+            <div class="items-col" id="itemsColOrd"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="order-total-row" style="margin-top:14px; border-top:1px solid var(--border); padding-top:12px;">
+        <span class="order-total-label">Total</span>
+        <span class="order-total-value" id="viewOrderTotal">0.00 €</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Modal: detalle de mesa ===== -->
+  <!-- ===== Mini modal: método de pago ===== -->
+  <div class="mini-modal-backdrop" id="paymentModal">
+    <div class="mini-modal-sheet">
+      <div class="modal-head" style="margin-bottom:14px;">
+        <h2>Método de pago</h2>
+        <button class="modal-close" onclick="closePaymentModal()">✕</button>
+      </div>
+      <button class="payment-option" onclick="choosePaymentMethod('Efectivo')">
+        <span class="po-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M9.5 15.5c.5.8 1.4 1.3 2.5 1.3 1.6 0 2.8-.9 2.8-2.1s-1-1.7-2.8-2.1c-1.8-.4-2.8-1-2.8-2.1 0-1.2 1.2-2.1 2.8-2.1 1.1 0 2 .5 2.5 1.3"/></svg></span>
+        <span>Efectivo</span>
+      </button>
+      <button class="payment-option" onclick="choosePaymentMethod('Tarjeta')">
+        <span class="po-icon"><svg viewBox="0 0 24 24"><rect x="1" y="6" width="22" height="14" rx="2"/><path d="M1 10h22"/></svg></span>
+        <span>Tarjeta</span>
+      </button>
+      <button class="payment-option" onclick="choosePaymentMethod('Promoción')">
+        <span class="po-icon"><svg viewBox="0 0 24 24"><path d="M20.6 13.4L13 21 3 11V3h8l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span>
+        <span>Promoción</span>
+      </button>
+    </div>
+  </div>
+
+<div class="toast" id="toast"></div>
+
+  </div>
+<!-- fin appRoot -->
+
+<script>
+const STORAGE_KEY = 'cafe-comandas-v4';
+const SESSION_KEY = 'cafe-comandas-session';
+
+// Cuentas válidas. Para añadir más camareros/encargados, añade otro objeto aquí.
+const ACCOUNTS = [
+  { id: 'u1', pin: '789', name: 'Usuario 1', initials: 'U1' }
+];
+
+let currentUser = null;
+let pinBuffer = '';
+
+function renderPinDots(){
+  const dots = document.querySelectorAll('#pinDots span');
+  dots.forEach((d, i)=> d.classList.toggle('filled', i < pinBuffer.length));
+}
+function pinPress(digit){
+  if(pinBuffer.length >= 3) return;
+  pinBuffer += digit;
+  renderPinDots();
+  document.getElementById('pinError').textContent = '';
+  if(pinBuffer.length === 3) setTimeout(checkPin, 120);
+}
+function pinBackspace(){
+  pinBuffer = pinBuffer.slice(0, -1);
+  renderPinDots();
+  document.getElementById('pinError').textContent = '';
+}
+async function checkPin(){
+  const account = ACCOUNTS.find(a => a.pin === pinBuffer);
+  if(account){
+    await loginAs(account);
+  } else {
+    document.getElementById('pinError').textContent = 'Clave incorrecta';
+    const dots = document.getElementById('pinDots');
+    dots.classList.add('shake');
+    setTimeout(()=>dots.classList.remove('shake'), 350);
+    pinBuffer = '';
+    renderPinDots();
+  }
+}
+async function loginAs(account){
+  currentUser = account;
+  try{
+    await window.storage.set(SESSION_KEY, JSON.stringify({ loggedIn: true, userId: account.id }), false);
+  }catch(e){ /* si falla el guardado, la sesión simplemente no persistirá al recargar */ }
+  enterApp();
+}
+async function checkExistingSession(){
+  try{
+    const res = await window.storage.get(SESSION_KEY, false);
+    if(res && res.value){
+      const session = JSON.parse(res.value);
+      const account = ACCOUNTS.find(a => a.id === session.userId);
+      if(session.loggedIn && account){
+        currentUser = account;
+        return true;
+      }
+    }
+  }catch(e){ /* no hay sesión guardada todavía */ }
+  return false;
+}
+function toggleAvatarMenu(e){
+  e.stopPropagation();
+  document.getElementById('avatarMenuName').textContent = currentUser ? currentUser.name : '';
+  document.getElementById('avatarMenu').classList.toggle('open');
+}
+async function handleLogoutClick(){
+  document.getElementById('avatarMenu').classList.remove('open');
+  try{ await window.storage.delete(SESSION_KEY, false); }catch(e){}
+  currentUser = null;
+  pinBuffer = '';
+  renderPinDots();
+  document.getElementById('pinError').textContent = '';
+  document.getElementById('loginUserName').textContent = '';
+  document.getElementById('appRoot').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+function enterApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'block';
+  document.getElementById('avatarChip').textContent = currentUser.initials;
+  bootApp();
+}
+
+// Catálogo: pestañas > categorías coloreadas > productos con precio (igual que el TPV físico)
+const PRODUCT_CATALOG = {
+  'Bebidas': [
+    { name:'Cafés e Infus.', color:'#c0522f', items:[
+      {name:'Solo', price:1.50}, {name:'Solo doble', price:2.00}, {name:'Café con leche', price:1.70},
+      {name:'Café con leche XL', price:1.90}, {name:'Café con leche doble', price:2.20}, {name:'Cortado', price:1.60},
+      {name:'Americano', price:1.50}, {name:'Capuchino', price:2.00}, {name:'Bombón', price:2.00},
+      {name:'Carajillo', price:2.20}, {name:'Café Irlandés', price:4.50}, {name:'Colacao', price:2.20},
+      {name:'Vienes', price:4.50}, {name:'Quemadillo Aragonés', price:4.50},
+      {name:'Manzanilla', price:1.80}, {name:'Poleo menta', price:1.80}, {name:'Frutos del bosque', price:2.20},
+      {name:'Roibos Relajante', price:2.20}, {name:'Te verde', price:1.80}, {name:'Te verde detox', price:2.20},
+      {name:'Te rojo', price:1.80}, {name:'Te rojo feel good', price:2.20}, {name:'Te negro Celyan', price:1.80},
+      {name:'Te negro seducción', price:2.20}, {name:'Te blanco love curcuma', price:2.20}, {name:'Te Oolong jengibre y limón', price:2.20}
+    ]},
+    { name:'Agua/Zumos', color:'#e3a53a', items:[
+      {name:'Mondariz 500', price:2.50}, {name:'Mondariz 1000', price:1.80}, {name:'Mondariz Gas 330', price:2.60},
+      {name:'Vida Naranja', price:2.60}, {name:'Vida Piña', price:2.60}, {name:'Vida Melocotón', price:2.60}, {name:'Vida Mosto', price:2.60},
+      {name:'Aquarade limón', price:2.80}, {name:'Aquarade naranja', price:2.80},
+      {name:'Casera', price:2.80}, {name:'Casera limón', price:2.80}, {name:'Lipton', price:2.80},
+      {name:'Pepsi', price:2.50}, {name:'Pepsi zero', price:2.50}, {name:'7up', price:2.50},
+      {name:'Schweppes', price:2.50}, {name:'Schweppes limón', price:2.50}, {name:'Schweppes naranja', price:2.50},
+      {name:'Cacaolat', price:2.50}, {name:'Horchata Chufi', price:3.50}, {name:'Biter Kass', price:2.50}
+    ]},
+    { name:'Cervezas', color:'#3a6fd8', items:[
+      {name:'1870 La Rubia 1/3', price:2.70}, {name:'Aguila S/F 1/3', price:2.70}, {name:'Aguila S/F 1/3 0.0', price:2.70},
+      {name:'Amstel Oro 1/3', price:2.70}, {name:'Amstel Oro 0.0 1/3', price:2.70}, {name:'CuzCampo Sin gluten 1/3', price:2.70},
+      {name:'Heineken 1/3', price:2.70}, {name:'Heineken 0.0 1/3', price:2.70}, {name:'Heineken Caña', price:2.00},
+      {name:'Heineken Copa', price:2.50}, {name:'Heineken Jarra', price:3.00},
+      {name:'Ladrón de manzana 1/3', price:2.70}, {name:'Ladrón de verano', price:3.50},
+      {name:'Radler Caña', price:2.10}, {name:'Radler Copa', price:2.70}, {name:'Radler Jarra', price:3.20}
+    ]},
+    { name:'Vino Tinto', color:'#5f9455', items:[
+      {name:'Copa Beronia Rioja', price:2.90}, {name:'Copa Hito roble Ribera del Duero', price:3.10},
+      {name:'Copa Prados Campo de Borja', price:3.50}, {name:'Copa Viñas del Vero Tinto roble', price:2.50},
+      {name:'Botella Beronia Rioja', price:16.00}, {name:'Botella Hito roble Ribera del Duero', price:18.00},
+      {name:'Botella Prados Campo de Borja', price:20.00}, {name:'Botella Viñas del Vero Tinto roble', price:14.00}
+    ]},
+    { name:'Vino Blanco', color:'#3aa0df', items:[
+      {name:'Copa vino blanco', price:2.50}, {name:'Botella vino blanco', price:12.00}
+    ]},
+    { name:'Rosado/Espum.', color:'#d9793d', items:[
+      {name:'Copa Viñas del Vero rosado', price:2.50}, {name:'Botella Viñas del Vero rosado', price:14.00},
+      {name:'Cava (Casto Brut reserva)', price:25.00}, {name:'Botella de Mumm', price:75.00}, {name:'Vermouth casero', price:3.00}
+    ]},
+    { name:'Ginebra', color:'#5b5fc9', items:[
+      {name:'Chupito Beefeater', price:2.50}, {name:'Copa Beefeater', price:6.00}, {name:'Combinado Beefeater', price:8.00},
+      {name:'Chupito Brokmans', price:5.00}, {name:'Copa Brokmans', price:12.00}, {name:'Combinado Brokmans', price:14.00},
+      {name:"Chupito Martin Miller's", price:5.00}, {name:"Copa Martin Miller's Artic", price:12.00}, {name:"Combinado Martin Miller's", price:14.00},
+      {name:'Chupito Monkey', price:5.00}, {name:'Copa Monkey', price:12.00}, {name:'Combinado Monkey', price:14.00},
+      {name:'Chupito Nordés', price:3.50}, {name:'Copa Nordés', price:8.00}, {name:'Combinado Nordés', price:10.00},
+      {name:'Chupito Puerto de Indias', price:2.50}, {name:'Copa Puerto de Indias', price:6.00}, {name:'Combinado Puerto de Indias', price:8.00},
+      {name:"Chupito Seagram's", price:2.50}, {name:"Copa Seagram's", price:6.00}, {name:"Combinado Seagram's", price:8.00}
+    ]},
+    { name:'Ron', color:'#c25230', items:[
+      {name:'Chupito Brugal añejo', price:2.50}, {name:'Copa Brugal añejo', price:6.00}, {name:'Combinado Brugal añejo', price:8.00},
+      {name:'Chupito Havana Club 7', price:3.50}, {name:'Copa Havana Club 7', price:8.00}, {name:'Combinado Havana Club 7', price:10.00},
+      {name:'Chupito Negrita', price:2.50}, {name:'Copa Negrita', price:6.00}, {name:'Combinado Negrita', price:8.00},
+      {name:'Chupito Santa Teresa añejo GR', price:2.50}, {name:'Copa Santa Teresa añejo GR', price:6.00}, {name:'Combinado Santa Teresa añejo GR', price:8.00},
+      {name:'Chupito Malibu', price:2.50}, {name:'Copa Malibu', price:6.00}, {name:'Combinado Malibu', price:8.00}
+    ]},
+    { name:'Vodka', color:'#c85351', items:[
+      {name:'Chupito Absolut', price:2.50}, {name:'Copa Grey Goose', price:12.00}
+    ]},
+    { name:'Whisky', color:'#8ea2af', items:[
+      {name:'Chupito JW Red Label', price:2.50}, {name:'Copa JW Red Label', price:6.00},
+      {name:'Chupito J&B', price:2.50}, {name:'Copa J&B', price:6.00},
+      {name:'Chupito Four Roses', price:2.50}, {name:'Copa Four Roses', price:6.00},
+      {name:'Chupito Jack Daniels', price:2.50}, {name:'Copa Jack Daniels', price:6.00},
+      {name:'Chupito Jameson 5 años', price:2.50}, {name:'Copa Jameson 5 años', price:6.00},
+      {name:'Chupito Ballantines', price:2.50}, {name:'Copa Ballantines', price:6.00}, {name:'Combinado Ballantines', price:8.00},
+      {name:'Chupito Macallan 12 doble cask', price:10.00}, {name:'Combinado Macallan 12 doble cask', price:30.00}
+    ]},
+    { name:'Licores', color:'#3f8f7c', items:[
+      {name:'Chupito Baileys', price:2.50}, {name:'Copa Baileys', price:6.00},
+      {name:'Chupito Veterano', price:2.50}, {name:'Combinado Veterano', price:8.00},
+      {name:'Chupito Carlos III', price:2.50}, {name:'Copa Carlos III', price:6.00},
+      {name:'Chupito Castellana', price:2.50}, {name:'Copa Castellana', price:6.00},
+      {name:'Chupito Tequila JC Reposado', price:2.50}, {name:'Combinado Tequila JC Reposado', price:10.00},
+      {name:'Copa Remy Martin', price:4.50}, {name:'Combinado Remy Martin', price:25.00},
+      {name:'Copa RV Pacharán', price:4.50}, {name:'Combinado RV Pacharán', price:8.00},
+      {name:'Copa RV Orujo Blanco', price:4.50}, {name:'Combinado RV Orujo Blanco', price:8.00},
+      {name:'Copa RV Hierbas', price:4.50}, {name:'Combinado RV Hierbas', price:8.00},
+      {name:'Copa RV Crema', price:4.50}, {name:'Combinado RV Crema', price:8.00},
+      {name:'Chupito Petroni Rojo Vermut', price:2.50}, {name:'Combinado Petroni Rojo Vermut', price:6.00},
+      {name:'Chupito Petroni Blanco Vermut', price:2.50}, {name:'Combinado Petroni Blanco Vermut', price:6.00}
+    ]}
+  ],
+  'Comidas': [
+    { name:'Minis', color:'#7fbfb5', items:[
+      {name:'Mini del día', price:2.90}
+    ]},
+    { name:'Tostadas', color:'#d9713f', items:[
+      {name:'Tostada', price:1.80}, {name:'Top Cheese', price:2.50}, {name:'Papada', price:2.90},
+      {name:'Croissant Mixto', price:2.50}, {name:'Tostada bacon, queso y huevo', price:2.50}
+    ]},
+    { name:'Almuerzos', color:'#eba52e', items:[
+      {name:'Tortilla de patata', price:2.50}, {name:'Vegetal', price:2.50}, {name:'Aguacate', price:3.20},
+      {name:'Damasco', price:3.20}, {name:'Mantequilla y mermelada', price:2.80}, {name:'Revuelto de salmón', price:3.20},
+      {name:'Rustica de jamón', price:2.80}, {name:'Tomate y aceite', price:2.00}, {name:'Batida de jamón', price:4.00},
+      {name:'Empanadilla argentina', price:2.50}, {name:'Matrimonio', price:2.80}, {name:'Pincho de tortilla', price:3.50},
+      {name:'Rulo', price:2.50}, {name:'Boquerón', price:3.00}, {name:'Anchoa', price:3.00},
+      {name:'Tapa del día', price:3.00}, {name:'Salmón', price:2.50}, {name:'Pepinillo relleno', price:3.50},
+      {name:'Huevo gamba', price:3.00}, {name:'Salmuera', price:2.20}, {name:'Borraja y gulas', price:3.50},
+      {name:'Huevo frito y chistorra', price:3.00}, {name:'Jamón', price:2.20}, {name:'Huevo poche', price:2.20}, {name:'Otros', price:1.00}
+    ]},
+    { name:'Tapas', color:'#1f6fd6', items:[
+      {name:'Patatas bravas', price:4.50}, {name:'Boquerones', price:5.50},
+      {name:'Pimientos de padrón', price:5.00}, {name:'Calamares', price:6.50}
+    ]},
+    { name:'Vinagrillos', color:'#5f9455', items:[
+      {name:'Vinagrillo de bacalao', price:5.50}, {name:'Vinagrillo de gambas', price:6.00}, {name:'Vinagrillo de atún', price:5.00}
+    ]},
+    { name:'Croquetas', color:'#1ea3d9', items:[
+      {name:'Croquetas de jamón', price:5.50}, {name:'Croquetas de pollo', price:5.50},
+      {name:'Croquetas de queso', price:5.50}, {name:'Croquetas de bacalao', price:6.00}
+    ]},
+    { name:'Suplementos', color:'#5b5fd9', items:[
+      {name:'Suplemento botella de vino', price:10.00}, {name:'Suplemento pan', price:0.50},
+      {name:'Suplemento queso', price:1.00}, {name:'Suplemento huevo', price:1.20}, {name:'Suplemento bacon', price:1.50}
+    ]},
+    { name:'Bolleria', color:'#d9822f', items:[
+      {name:'Croissant', price:1.70}, {name:'Croissant Choco', price:1.80}, {name:'Croissant Plancha', price:2.00},
+      {name:'Berlina Super choco', price:1.80}, {name:'Churro/Churro choco', price:0.50},
+      {name:'Cookies choco', price:2.00}, {name:'Cookies doble choco', price:2.00},
+      {name:'Hoop choco', price:1.60}, {name:'Hoop pink', price:1.60},
+      {name:'Muffin dubai', price:2.20}, {name:'Muffin red velvet', price:2.20}, {name:'Rol canela', price:1.80}
+    ]},
+    { name:'Desayunos', color:'#5a5fcf', items:[
+      {name:'Café + bolleria', price:2.80}, {name:'Café + mini', price:3.80}
+    ]},
+    { name:'Meriendas', color:'#d1502f', items:[
+      {name:'Tarta de calabaza', price:4.50}, {name:'Tarta de queso', price:4.50},
+      {name:'Tarta tres leches', price:4.50}, {name:'Tarta de chocolate', price:4.50}
+    ]},
+    { name:'Menus', color:'#8fa3ad', items:[
+      {name:'Medio menú - primero', price:9.90}, {name:'Medio menú - segundo', price:10.90},
+      {name:'Menú completo', price:15.90}, {name:'Menú fin de semana', price:18.00}, {name:'Plato del día', price:11.90}
+    ]}
+  ],
+  'Varios': [
+    { name:'Extras', color:'#8ea2af', items:[
+      {name:'Pan', price:0.50}, {name:'Mantequilla', price:0.30}, {name:'Mermelada', price:0.30}, {name:'Servilletas extra', price:0},
+      {name:'Promo 2x1', price:8.00}, {name:'Promo tapa', price:4.50}, {name:'Jarra de sangría', price:9.00}
+    ]},
+    { name:'Personalizados', color:'#3f8f7c', items:[] }
+  ]
+};
+function allCatalogItems(){
+  const all = [];
+  Object.values(PRODUCT_CATALOG).forEach(cats=>cats.forEach(c=>c.items.forEach(i=>all.push(i.name))));
+  return all;
+}
+function getProductPrice(name){
+  for(const cats of Object.values(PRODUCT_CATALOG)){
+    for(const cat of cats){
+      const found = cat.items.find(i=>i.name===name);
+      if(found) return found.price;
+    }
+  }
+  const custom = state.customProducts.find(i=>i.name===name);
+  if(custom) return custom.price;
+  return 0;
+}
+const DEFAULT_PRODUCTS = allCatalogItems();
+const DEFAULT_INVENTORY = [
+  {id:'i1', name:'Café en grano', stock:12, unit:'kg', low:3},
+  {id:'i2', name:'Leche', stock:20, unit:'L', low:5},
+  {id:'i3', name:'Vasos para llevar', stock:150, unit:'ud', low:30},
+  {id:'i4', name:'Zumo de naranja', stock:8, unit:'L', low:2},
+  {id:'i5', name:'Pan para tostadas', stock:25, unit:'ud', low:8},
+  {id:'i6', name:'Croissants', stock:14, unit:'ud', low:5}
+];
+
+let state = { tables: [], orders: [], products: DEFAULT_PRODUCTS.slice(), customProducts: [], inventory: DEFAULT_INVENTORY.slice(), dailyCounters: {} };
+
+// ---- estado del wizard (borrador de orden en curso) ----
+let wizardStep = 1;
+let draft = { customerName: '', items: [], mesaOption: null, tableId: null };
+let activeTab = 'Bebidas';
+let activeCategory = null;
+
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function pad3(n){ return String(n).padStart(3,'0'); }
+function dateKeyFromTs(ts){
+  const d = new Date(ts);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function nextDailyNumber(dateKey){
+  const current = state.dailyCounters[dateKey] || 0;
+  const next = current + 1;
+  state.dailyCounters[dateKey] = next;
+  return next;
+}
+function orderMatchesSearch(order, search){
+  if(!search) return true;
+  const s = search.toLowerCase();
+  const numStr = pad3(order.dailyNumber||0);
+  return (order.customerName||'').toLowerCase().includes(s)
+    || (order.tableName||'').toLowerCase().includes(s)
+    || numStr.includes(s)
+    || String(order.dailyNumber||'').includes(s);
+}
+function clearPagadasDateFilter(){
+  document.getElementById('pagadasFromDate').value = '';
+  document.getElementById('pagadasToDate').value = '';
+  render();
+}
+
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    if(res && res.value){
+      const parsed = JSON.parse(res.value);
+      state = Object.assign({tables:[],orders:[],products:DEFAULT_PRODUCTS.slice(),customProducts:[],inventory:DEFAULT_INVENTORY.slice(),dailyCounters:{}}, parsed);
+    }
+  }catch(e){ /* aún no existe */ }
+}
+async function saveState(){
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(state), true); }
+  catch(e){ showToast('Error al guardar. Revisa tu conexión.'); }
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ---------- Utility pill toggle ----------
+(function(){
+  const pill = document.getElementById('utilityPill');
+  const toggle = document.getElementById('utilityToggle');
+  toggle.addEventListener('click', (e)=>{ e.stopPropagation(); pill.classList.toggle('open'); });
+  document.addEventListener('click', (e)=>{
+    if(pill.classList.contains('open') && !pill.contains(e.target)) pill.classList.remove('open');
+    const avatarWrap = document.getElementById('avatarWrap');
+    const avatarMenu = document.getElementById('avatarMenu');
+    if(avatarMenu.classList.contains('open') && !avatarWrap.contains(e.target)) avatarMenu.classList.remove('open');
+  });
+})();
+
+// ---------- Dock nav ----------
+document.querySelectorAll('.dock-item').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.dock-item').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-'+btn.dataset.screen).classList.add('active');
+    document.getElementById('fabNewOrder').style.display = btn.dataset.screen==='ordenes' ? 'flex' : 'none';
+    render();
+  });
+});
+
+// ---------- Wizard: nueva orden ----------
+function resetDraft(){
+  draft = { customerName: '', items: [], mesaOption: null, tableId: null };
+  wizardStep = 1;
+  activeTab = 'Bebidas';
+  activeCategory = null;
+}
+function openOrderModal(){
+  resetDraft();
+  document.getElementById('customerNameInput').value = '';
+  document.getElementById('productSearch').value = '';
+  showStep(1);
+  document.getElementById('orderModal').classList.add('open');
+  setTimeout(()=>document.getElementById('customerNameInput').focus(), 150);
+}
+function closeOrderModal(){
+  document.getElementById('orderModal').classList.remove('open');
+  resetDraft();
+}
+function showStep(n){
+  wizardStep = n;
+  document.getElementById('wizardStep1').style.display = n===1 ? 'block' : 'none';
+  document.getElementById('wizardStep2').style.display = n===2 ? 'block' : 'none';
+  document.getElementById('wizardStep3').style.display = n===3 ? 'block' : 'none';
+  document.querySelectorAll('#stepDots .dot').forEach(d=>{
+    const s = parseInt(d.dataset.step,10);
+    d.classList.remove('done','current');
+    if(s < n) d.classList.add('done');
+    if(s === n) d.classList.add('current');
+  });
+  const titles = {1:'Nueva orden · Cliente', 2:'Nueva orden · Productos', 3:'Nueva orden · Mesa'};
+  document.getElementById('wizardTitle').textContent = titles[n];
+  if(n===2){ renderProductResults(); renderOrderSummary(); }
+  if(n===3) renderWizardStep3();
+}
+function goToStep(n){
+  if(n===2){
+    draft.customerName = document.getElementById('customerNameInput').value.trim();
+    if(!draft.customerName) return;
+  }
+  if(n===3 && draft.items.length===0) return;
+  showStep(n);
+}
+
+document.getElementById('customerNameInput').addEventListener('input', (e)=>{
+  document.getElementById('step1NextBtn').disabled = e.target.value.trim().length===0;
+});
+document.getElementById('customerNameInput').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && e.target.value.trim()) goToStep(2);
+});
+
+// ---------- Paso 2: productos ----------
+function renderProductResults(){
+  const q = (document.getElementById('productSearch').value || '').trim().toLowerCase();
+  const searching = q.length > 0;
+
+  document.getElementById('productResults').style.display = searching ? 'flex' : 'none';
+  document.getElementById('categoryBrowser').style.display = searching ? 'none' : 'block';
+
+  if(searching){
+    const matches = state.products.filter(p=>p.toLowerCase().includes(q));
+    const results = document.getElementById('productResults');
+    results.innerHTML = '';
+    matches.slice(0,30).forEach(name=>{
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.textContent = name;
+      chip.onclick = ()=>addItemToDraft(name);
+      results.appendChild(chip);
+    });
+
+    const hint = document.getElementById('addCustomHint');
+    if(!state.products.some(p=>p.toLowerCase()===q)){
+      const rawName = document.getElementById('productSearch').value.trim();
+      hint.innerHTML = `
+        <div class="add-custom-hint" style="display:flex; align-items:center; gap:8px; cursor:default;">
+          <span style="flex:1;">+ Añadir "${escapeHtml(rawName)}" como producto nuevo</span>
+          <input id="customPriceInput" type="number" step="0.10" min="0" placeholder="€" style="width:56px; border:1px solid var(--border); border-radius:8px; padding:6px 8px; font-size:13px;">
+          <button id="addCustomBtn" style="background:var(--teal-3); color:#fff; border:none; border-radius:8px; padding:7px 12px; font-weight:700; font-size:12.5px; cursor:pointer;">Añadir</button>
+        </div>`;
+      document.getElementById('addCustomBtn').onclick = ()=>{
+        const price = parseFloat(document.getElementById('customPriceInput').value) || 0;
+        state.products.push(rawName);
+        state.customProducts.push({ name: rawName, price });
+        addItemToDraft(rawName);
+        document.getElementById('productSearch').value = '';
+        saveState();
+        renderProductResults();
+      };
+    } else {
+      hint.innerHTML = '';
+    }
+  } else {
+    document.getElementById('addCustomHint').innerHTML = '';
+    renderTabs();
+    if(activeCategory){ openCategoryItems(activeCategory); } else { showCategoryGrid(); }
+  }
+}
+
+function renderTabs(){
+  const tabRow = document.getElementById('tabRow');
+  tabRow.innerHTML = '';
+  Object.keys(PRODUCT_CATALOG).forEach(tabName=>{
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (tabName===activeTab ? ' active' : '');
+    btn.textContent = tabName;
+    btn.onclick = ()=>{
+      activeTab = tabName;
+      activeCategory = null;
+      renderTabs();
+      showCategoryGrid();
+    };
+    tabRow.appendChild(btn);
+  });
+}
+
+function renderCategoryGrid(){
+  const grid = document.getElementById('categoryGrid');
+  grid.innerHTML = '';
+  PRODUCT_CATALOG[activeTab].forEach(cat=>{
+    const card = document.createElement('button');
+    card.className = 'category-card';
+    card.style.background = cat.color;
+    card.textContent = cat.name;
+    card.onclick = ()=>openCategoryItems(cat.name);
+    grid.appendChild(card);
+  });
+}
+
+function showCategoryGrid(){
+  document.getElementById('categoryGridView').style.display = 'block';
+  document.getElementById('categoryItemsView').style.display = 'none';
+  renderCategoryGrid();
+}
+
+function openCategoryItems(catName){
+  activeCategory = catName;
+  document.getElementById('categoryGridView').style.display = 'none';
+  document.getElementById('categoryItemsView').style.display = 'block';
+  renderItemsCol();
+}
+
+function backToCategories(){
+  activeCategory = null;
+  showCategoryGrid();
+}
+
+function renderItemsCol(){
+  const cat = PRODUCT_CATALOG[activeTab].find(c=>c.name===activeCategory);
+  const header = document.getElementById('categoryItemsHeader');
+  header.innerHTML = '';
+  if(cat){
+    const dot = document.createElement('span');
+    dot.className = 'cih-dot';
+    dot.style.background = cat.color;
+    const title = document.createElement('span');
+    title.className = 'cih-title';
+    title.textContent = cat.name;
+    header.appendChild(dot);
+    header.appendChild(title);
+  }
+
+  const itemsCol = document.getElementById('itemsCol');
+  let items = cat ? cat.items.slice() : [];
+  if(cat && cat.name==='Personalizados'){ items = items.concat(state.customProducts); }
+  itemsCol.innerHTML = '';
+  if(items.length===0){
+    itemsCol.innerHTML = '<div class="items-col-empty">Sin productos en esta categoría todavía. Búscalos arriba para añadirlos.</div>';
+    return;
+  }
+  items.forEach(p=>{
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML = `<span>${escapeHtml(p.name)}</span><span class="item-row-price">${p.price.toFixed(2)} €</span>`;
+    row.onclick = ()=>addItemToDraft(p.name);
+    itemsCol.appendChild(row);
+  });
+}
+function addItemToDraft(name){
+  const existing = draft.items.find(i=>i.name===name);
+  if(existing){ existing.qty += 1; }
+  else { draft.items.push({ name, price: getProductPrice(name), qty: 1, note: '' }); }
+  renderOrderSummary();
+}
+function incrementDraftItem(idx){
+  draft.items[idx].qty += 1;
+  renderOrderSummary();
+}
+function decrementDraftItem(idx){
+  if(draft.items[idx].qty > 1){ draft.items[idx].qty -= 1; }
+  renderOrderSummary();
+}
+function removeDraftItem(idx){
+  draft.items.splice(idx,1);
+  renderOrderSummary();
+}
+function draftTotal(){
+  return draft.items.reduce((sum, i)=> sum + (i.price * i.qty), 0);
+}
+function renderOrderSummary(){
+  const card = document.getElementById('orderSummaryCard');
+  const rows = document.getElementById('summaryRows');
+  if(draft.items.length===0){
+    card.style.display = 'none';
+    rows.innerHTML = '';
+  } else {
+    card.style.display = 'block';
+    rows.innerHTML = '';
+    draft.items.forEach((item, idx)=>{
+      const row = document.createElement('div');
+      row.className = 'summary-row';
+      row.innerHTML = `
+        <div class="summary-row-main">
+          <div class="summary-row-info">
+            <div class="summary-row-name">${escapeHtml(item.name)}</div>
+            <div class="summary-row-price">${item.price.toFixed(2)} € / ud.</div>
+          </div>
+          <div class="summary-row-controls">
+            <div class="qty-stepper">
+              <button aria-label="Quitar uno">−</button>
+              <span>${item.qty}</span>
+              <button aria-label="Añadir uno">+</button>
+            </div>
+            <span class="summary-row-subtotal">${(item.price*item.qty).toFixed(2)} €</span>
+            <button class="remove-item-btn" aria-label="Eliminar producto">✕</button>
+          </div>
+        </div>
+        <input class="note-input" type="text" placeholder="Notas del cliente (ej: sin azúcar, para llevar, extra caliente...)" value="${escapeHtml(item.note || '')}">
+      `;
+      row.querySelector('.note-input').oninput = (e)=>{ draft.items[idx].note = e.target.value; };
+      const buttons = row.querySelectorAll('.qty-stepper button');
+      buttons[0].onclick = ()=>decrementDraftItem(idx);
+      buttons[1].onclick = ()=>incrementDraftItem(idx);
+      row.querySelector('.remove-item-btn').onclick = ()=>removeDraftItem(idx);
+      rows.appendChild(row);
+    });
+  }
+  document.getElementById('orderTotalValue').textContent = draftTotal().toFixed(2) + ' €';
+  document.getElementById('step2NextBtn').disabled = draft.items.length===0;
+}
+
+// ---------- Paso 3: mesa ----------
+function chooseMesaOption(opt){
+  draft.mesaOption = opt;
+  draft.tableId = null;
+  document.getElementById('choiceMesaSi').classList.toggle('selected', opt==='si');
+  document.getElementById('choiceMesaNo').classList.toggle('selected', opt==='no');
+  document.getElementById('mesaPickerArea').style.display = opt==='si' ? 'block' : 'none';
+  updateCreateOrderState();
+}
+function addTableInWizard(){
+  const input = document.getElementById('wizardNewTableInput');
+  const name = input.value.trim();
+  if(!name) return;
+  const t = {id: uid(), name};
+  state.tables.push(t);
+  input.value = '';
+  draft.tableId = t.id;
+  saveState();
+  renderWizardStep3();
+}
+function selectTableInWizard(id){
+  draft.tableId = id;
+  renderWizardStep3();
+}
+function renderWizardStep3(){
+  document.getElementById('choiceMesaSi').classList.toggle('selected', draft.mesaOption==='si');
+  document.getElementById('choiceMesaNo').classList.toggle('selected', draft.mesaOption==='no');
+  document.getElementById('mesaPickerArea').style.display = draft.mesaOption==='si' ? 'block' : 'none';
+
+  const chips = document.getElementById('wizardTableChips');
+  chips.innerHTML = '';
+  state.tables.forEach(t=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (t.id===draft.tableId ? ' selected':'');
+    chip.textContent = t.name;
+    chip.onclick = ()=>selectTableInWizard(t.id);
+    chips.appendChild(chip);
+  });
+  if(state.tables.length===0){
+    chips.innerHTML = '<div class="empty-hint">Aún no hay mesas creadas, añade una abajo.</div>';
+  }
+  updateCreateOrderState();
+}
+function updateCreateOrderState(){
+  const summary = document.getElementById('orderSummary');
+  const canCreate = draft.mesaOption==='no' || (draft.mesaOption==='si' && draft.tableId);
+  document.getElementById('createOrderBtn').disabled = !canCreate;
+  if(!draft.mesaOption){ summary.style.display='none'; return; }
+  const table = draft.tableId ? state.tables.find(t=>t.id===draft.tableId) : null;
+  const mesaTxt = draft.mesaOption==='no' ? 'Sin mesa asignada' : (table ? 'Mesa '+table.name : 'elige una mesa');
+  const totalUnits = draft.items.reduce((s,i)=>s+i.qty,0);
+  summary.style.display = 'block';
+  summary.textContent = `${draft.customerName} · ${totalUnits} producto${totalUnits===1?'':'s'} · ${mesaTxt} · Total ${draftTotal().toFixed(2)} €`;
+}
+
+function confirmOrder(){
+  if(draft.items.length===0 || !draft.customerName) return;
+  if(draft.mesaOption==='si' && !draft.tableId) return;
+  const table = draft.tableId ? state.tables.find(t=>t.id===draft.tableId) : null;
+  const now = Date.now();
+  const dateKey = dateKeyFromTs(now);
+  const dailyNumber = nextDailyNumber(dateKey);
+  state.orders.push({
+    id: uid(),
+    dailyNumber: dailyNumber,
+    dateKey: dateKey,
+    customerName: draft.customerName,
+    tableId: table ? table.id : null,
+    tableName: table ? table.name : null,
+    ts: now,
+    orderStatus: 'abierta',
+    items: draft.items.map(entry=>({
+      id: uid(), name: entry.name, price: entry.price, qty: entry.qty,
+      note: entry.note || '', status: 'pendiente'
+    }))
+  });
+  saveState();
+  showToast('Orden #'+pad3(dailyNumber)+' creada para '+draft.customerName);
+  closeOrderModal();
+  render();
+}
+
+// ---------- Detalle de orden (modal) ----------
+let viewingOrderId = null;
+let activeTabOrd = 'Bebidas';
+let activeCategoryOrd = null;
+
+function openViewOrderModal(orderId){
+  viewingOrderId = orderId;
+  activeTabOrd = 'Bebidas';
+  activeCategoryOrd = null;
+  document.getElementById('addProductPanelOrd').style.display = 'none';
+  document.getElementById('productSearchOrd').value = '';
+  document.getElementById('viewOrderModal').classList.add('open');
+  renderViewOrderModal();
+}
+function closeViewOrderModal(){
+  document.getElementById('viewOrderModal').classList.remove('open');
+  viewingOrderId = null;
+  render();
+}
+function getViewingOrder(){
+  return state.orders.find(o=>o.id===viewingOrderId);
+}
+function toggleItemCheck(itemId){
+  const order = getViewingOrder();
+  if(!order) return;
+  const item = order.items.find(i=>i.id===itemId);
+  if(!item) return;
+  item.status = item.status==='listo' ? 'pendiente' : 'listo';
+  if(item.status==='listo') item.doneTs = Date.now();
+  syncOrderStatus(order);
+  saveState();
+  render();
+}
+function incrementOrderItem(itemId){
+  const order = getViewingOrder();
+  if(!order) return;
+  const item = order.items.find(i=>i.id===itemId);
+  if(item){ item.qty += 1; saveState(); renderViewOrderModal(); }
+}
+function decrementOrderItem(itemId){
+  const order = getViewingOrder();
+  if(!order) return;
+  const item = order.items.find(i=>i.id===itemId);
+  if(item && item.qty > 1){ item.qty -= 1; saveState(); renderViewOrderModal(); }
+}
+function removeOrderItem(itemId){
+  const order = getViewingOrder();
+  if(!order) return;
+  order.items = order.items.filter(i=>i.id!==itemId);
+  if(order.items.length===0){
+    state.orders = state.orders.filter(o=>o.id!==order.id);
+    saveState();
+    showToast('Orden eliminada (sin productos)');
+    closeViewOrderModal();
+    return;
+  }
+  syncOrderStatus(order);
+  saveState();
+  render();
+}
+function setOrderCompletion(status){
+  const order = getViewingOrder();
+  if(!order) return;
+  if(status==='entregado'){
+    order.items.forEach(i=>{ if(i.status==='pendiente'){ i.status='listo'; i.doneTs=Date.now(); } });
+    order.orderStatus = 'entregado';
+    saveState();
+    showToast('Orden marcada como entregada');
+    renderViewOrderModal();
+    render();
+  }
+}
+
+// ---------- Mini modal: método de pago ----------
+function openPaymentModal(){
+  document.getElementById('paymentModal').classList.add('open');
+}
+function closePaymentModal(){
+  document.getElementById('paymentModal').classList.remove('open');
+}
+function choosePaymentMethod(method){
+  const order = getViewingOrder();
+  if(!order) return;
+  order.items.forEach(i=>{ if(i.status==='pendiente'){ i.status='listo'; i.doneTs=Date.now(); } });
+  order.orderStatus = 'pagado';
+  order.paymentMethod = method;
+  order.closedTs = Date.now();
+  saveState();
+  closePaymentModal();
+  showToast('Orden pagada · '+method);
+  closeViewOrderModal();
+}
+function renderViewOrderModal(){
+  const order = getViewingOrder();
+  if(!order) return;
+  const nameInput = document.getElementById('viewOrderCustomerName');
+  if(document.activeElement !== nameInput) nameInput.value = order.customerName;
+  document.getElementById('viewOrderNumberBadge').textContent = '#'+pad3(order.dailyNumber||0);
+  document.getElementById('viewOrderMeta').textContent =
+    (order.tableName ? ('Mesa '+order.tableName) : 'Sin mesa asignada') + ' · hace ' + timeAgoLabel(order.ts) + ' min' +
+    (order.orderStatus ? (' · ' + (order.orderStatus==='pagado' ? 'Pagada' : 'Entregada')) : '');
+
+  const completionArea = document.getElementById('voCompletionArea');
+  if(order.orderStatus === 'pagado'){
+    completionArea.innerHTML = `
+      <div class="vo-paid-banner">
+        <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+        <span>Pagada · ${escapeHtml(order.paymentMethod || '—')}</span>
+      </div>
+    `;
+  } else if(order.orderStatus === 'entregado'){
+    completionArea.innerHTML = `
+      <div class="vo-completion-grid" style="grid-template-columns:1fr;">
+        <button class="vo-completion-btn paid" id="btnMarcarPagado">
+          <span class="mc-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+          <span class="mc-label">Pagado</span>
+        </button>
+      </div>
+    `;
+    document.getElementById('btnMarcarPagado').onclick = openPaymentModal;
+  } else {
+    completionArea.innerHTML = `
+      <div class="vo-completion-grid">
+        <button class="vo-completion-btn" id="btnMarcarEntregado">
+          <span class="mc-icon"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+          <span class="mc-label">Entregado</span>
+        </button>
+        <button class="vo-completion-btn paid" id="btnMarcarEntregadoPagado">
+          <span class="mc-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+          <span class="mc-label">Entregado y Pagado</span>
+        </button>
+      </div>
+    `;
+    document.getElementById('btnMarcarEntregado').onclick = ()=>setOrderCompletion('entregado');
+    document.getElementById('btnMarcarEntregadoPagado').onclick = openPaymentModal;
+  }
+
+  const list = document.getElementById('viewOrderItemsList');
+  list.innerHTML = '';
+  order.items.forEach(item=>{
+    const done = item.status==='listo';
+    const row = document.createElement('div');
+    row.className = 'vo-item-row';
+    row.innerHTML = `
+      <button class="vo-check ${done?'checked':''}" aria-label="Marcar entregado"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></button>
+      <div class="vo-item-info">
+        <div class="vo-item-top">
+          <span class="vo-item-name ${done?'done':''}">${item.qty}× ${escapeHtml(item.name)}</span>
+          <button class="remove-item-btn" aria-label="Eliminar">✕</button>
+        </div>
+        <div class="vo-item-sub">
+          <div class="qty-stepper">
+            <button aria-label="Quitar uno">−</button>
+            <span>${item.qty}</span>
+            <button aria-label="Añadir uno">+</button>
+          </div>
+          <span class="vo-item-price">${item.price.toFixed(2)} €/ud · ${(item.price*item.qty).toFixed(2)} €</span>
+        </div>
+        ${item.note ? `<div class="ticket-note"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L2.4 18a1.9 1.9 0 0 0 1.6 2.8h16a1.9 1.9 0 0 0 1.6-2.8L13.7 3.9a1.9 1.9 0 0 0-3.4 0z"/></svg>${escapeHtml(item.note)}</div>` : ''}
+      </div>
+    `;
+    row.querySelector('.vo-check').onclick = ()=>toggleItemCheck(item.id);
+    row.querySelector('.remove-item-btn').onclick = ()=>removeOrderItem(item.id);
+    const steppers = row.querySelectorAll('.qty-stepper button');
+    steppers[0].onclick = ()=>decrementOrderItem(item.id);
+    steppers[1].onclick = ()=>incrementOrderItem(item.id);
+    list.appendChild(row);
+  });
+
+  document.getElementById('viewOrderTotal').textContent = orderTotal(order).toFixed(2) + ' €';
+}
+
+document.getElementById('viewOrderCustomerName').addEventListener('input', (e)=>{
+  const order = getViewingOrder();
+  if(!order) return;
+  order.customerName = e.target.value;
+  saveState();
+});
+
+function toggleAddProductPanel(){
+  const panel = document.getElementById('addProductPanelOrd');
+  const opening = panel.style.display === 'none';
+  panel.style.display = opening ? 'block' : 'none';
+  if(opening){ showCategoryGridOrd(); }
+}
+
+// ---- Buscador/categorías para añadir producto a una orden ya creada ----
+function renderProductResultsOrd(){
+  const q = (document.getElementById('productSearchOrd').value || '').trim().toLowerCase();
+  const searching = q.length > 0;
+  document.getElementById('productResultsOrd').style.display = searching ? 'flex' : 'none';
+  document.getElementById('categoryBrowserOrd').style.display = searching ? 'none' : 'block';
+
+  if(searching){
+    const matches = state.products.filter(p=>p.toLowerCase().includes(q));
+    const results = document.getElementById('productResultsOrd');
+    results.innerHTML = '';
+    matches.slice(0,30).forEach(name=>{
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.textContent = name;
+      chip.onclick = ()=>addItemToOrderPicker(name);
+      results.appendChild(chip);
+    });
+    const hint = document.getElementById('addCustomHintOrd');
+    if(!state.products.some(p=>p.toLowerCase()===q)){
+      const rawName = document.getElementById('productSearchOrd').value.trim();
+      hint.innerHTML = `
+        <div class="add-custom-hint" style="display:flex; align-items:center; gap:8px; cursor:default;">
+          <span style="flex:1;">+ Añadir "${escapeHtml(rawName)}" como producto nuevo</span>
+          <input id="customPriceInputOrd" type="number" step="0.10" min="0" placeholder="€" style="width:56px; border:1px solid var(--border); border-radius:8px; padding:6px 8px; font-size:13px;">
+          <button id="addCustomBtnOrd" style="background:var(--teal-3); color:#fff; border:none; border-radius:8px; padding:7px 12px; font-weight:700; font-size:12.5px; cursor:pointer;">Añadir</button>
+        </div>`;
+      document.getElementById('addCustomBtnOrd').onclick = ()=>{
+        const price = parseFloat(document.getElementById('customPriceInputOrd').value) || 0;
+        state.products.push(rawName);
+        state.customProducts.push({ name: rawName, price });
+        addItemToOrderPicker(rawName);
+        document.getElementById('productSearchOrd').value = '';
+        saveState();
+        renderProductResultsOrd();
+      };
+    } else {
+      hint.innerHTML = '';
+    }
+  } else {
+    document.getElementById('addCustomHintOrd').innerHTML = '';
+    renderTabsOrd();
+    if(activeCategoryOrd){ openCategoryItemsOrd(activeCategoryOrd); } else { showCategoryGridOrd(); }
+  }
+}
+function renderTabsOrd(){
+  const tabRow = document.getElementById('tabRowOrd');
+  tabRow.innerHTML = '';
+  Object.keys(PRODUCT_CATALOG).forEach(tabName=>{
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (tabName===activeTabOrd ? ' active' : '');
+    btn.textContent = tabName;
+    btn.onclick = ()=>{ activeTabOrd = tabName; activeCategoryOrd = null; renderTabsOrd(); showCategoryGridOrd(); };
+    tabRow.appendChild(btn);
+  });
+}
+function renderCategoryGridOrd(){
+  const grid = document.getElementById('categoryGridOrd');
+  grid.innerHTML = '';
+  PRODUCT_CATALOG[activeTabOrd].forEach(cat=>{
+    const card = document.createElement('button');
+    card.className = 'category-card';
+    card.style.background = cat.color;
+    card.textContent = cat.name;
+    card.onclick = ()=>openCategoryItemsOrd(cat.name);
+    grid.appendChild(card);
+  });
+}
+function showCategoryGridOrd(){
+  document.getElementById('categoryGridViewOrd').style.display = 'block';
+  document.getElementById('categoryItemsViewOrd').style.display = 'none';
+  renderTabsOrd();
+  renderCategoryGridOrd();
+}
+function openCategoryItemsOrd(catName){
+  activeCategoryOrd = catName;
+  document.getElementById('categoryGridViewOrd').style.display = 'none';
+  document.getElementById('categoryItemsViewOrd').style.display = 'block';
+  renderItemsColOrd();
+}
+function backToCategoriesOrd(){
+  activeCategoryOrd = null;
+  showCategoryGridOrd();
+}
+function renderItemsColOrd(){
+  const cat = PRODUCT_CATALOG[activeTabOrd].find(c=>c.name===activeCategoryOrd);
+  const header = document.getElementById('categoryItemsHeaderOrd');
+  header.innerHTML = '';
+  if(cat){
+    header.innerHTML = `<span class="cih-dot" style="background:${cat.color}"></span><span class="cih-title">${escapeHtml(cat.name)}</span>`;
+  }
+  const itemsCol = document.getElementById('itemsColOrd');
+  let items = cat ? cat.items.slice() : [];
+  if(cat && cat.name==='Personalizados'){ items = items.concat(state.customProducts); }
+  itemsCol.innerHTML = '';
+  if(items.length===0){
+    itemsCol.innerHTML = '<div class="items-col-empty">Sin productos en esta categoría todavía. Búscalos arriba para añadirlos.</div>';
+    return;
+  }
+  items.forEach(p=>{
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML = `<span>${escapeHtml(p.name)}</span><span class="item-row-price">${p.price.toFixed(2)} €</span>`;
+    row.onclick = ()=>addItemToOrderPicker(p.name);
+    itemsCol.appendChild(row);
+  });
+}
+function addItemToOrderPicker(name){
+  const order = getViewingOrder();
+  if(!order) return;
+  const existingPending = order.items.find(i=>i.name===name && i.status==='pendiente');
+  if(existingPending){ existingPending.qty += 1; }
+  else { order.items.push({ id: uid(), name, price: getProductPrice(name), qty: 1, note: '', status: 'pendiente' }); }
+  syncOrderStatus(order);
+  saveState();
+  render();
+  renderViewOrderModal();
+  showToast(name+' añadido a la orden');
+}
+function markItemDone(orderId, itemId){
+  const order = state.orders.find(o=>o.id===orderId);
+  if(!order) return;
+  const item = order.items.find(i=>i.id===itemId);
+  if(item){ item.status='listo'; item.doneTs=Date.now(); }
+  saveState(); render();
+}
+function markOrderAllDone(orderId){
+  const order = state.orders.find(o=>o.id===orderId);
+  if(!order) return;
+  order.items.forEach(i=>{ if(i.status==='pendiente'){ i.status='listo'; i.doneTs=Date.now(); } });
+  saveState(); render();
+}
+function orderHasPending(order){ return order.items.some(i=>i.status==='pendiente'); }
+function orderPendingCount(order){ return order.items.filter(i=>i.status==='pendiente').length; }
+function orderTotal(order){ return order.items.reduce((s,i)=>s+i.price*i.qty,0); }
+
+// ---------- Inventario ----------
+function addInventoryItem(){
+  const nameInput = document.getElementById('newInvName');
+  const stockInput = document.getElementById('newInvStock');
+  const name = nameInput.value.trim();
+  const stock = parseInt(stockInput.value, 10);
+  if(!name || isNaN(stock)) return;
+  state.inventory.push({id: uid(), name, stock, unit:'ud', low: Math.max(1, Math.round(stock*0.2))});
+  nameInput.value=''; stockInput.value='';
+  saveState(); render();
+}
+function adjustStock(id, delta){
+  const item = state.inventory.find(i=>i.id===id);
+  if(!item) return;
+  item.stock = Math.max(0, item.stock + delta);
+  saveState(); render();
+}
+
+// ---------- Tiempo ----------
+function timeAgoLabel(ts){
+  const diffMs = Date.now() - ts;
+  const mins = Math.floor(diffMs/60000);
+  const secs = Math.floor((diffMs%60000)/1000);
+  return mins+':'+String(secs).padStart(2,'0');
+}
+function urgencyClass(ts){
+  const mins = (Date.now()-ts)/60000;
+  if(mins>=10) return 'urgent';
+  if(mins>=5) return 'warn';
+  return '';
+}
+function formatDateTimeShort(ts){
+  const d = new Date(ts);
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function buildOrderCard(order, statusLabel){
+  const totalCount = order.items.reduce((s,i)=>s+i.qty,0);
+  const div = document.createElement('div');
+  div.className = 'ticket';
+  div.style.cursor = 'pointer';
+  div.onclick = ()=>openViewOrderModal(order.id);
+  const isPaid = order.orderStatus === 'pagado';
+  const timeDisplay = isPaid
+    ? `<div class="time-pill">${formatDateTimeShort(order.closedTs||order.ts)}</div>`
+    : `<div class="time-pill">${timeAgoLabel(order.ts)} min</div>`;
+  div.innerHTML = `
+    <div class="ticket-top">
+      <div>
+        <div class="ticket-mesa">${order.tableName ? ('Mesa '+escapeHtml(order.tableName)) : 'Sin mesa asignada'}</div>
+        <div class="ticket-persona"><span class="order-number-badge">#${pad3(order.dailyNumber||0)}</span>${escapeHtml(order.customerName)}</div>
+        <div class="ticket-item">${statusLabel} · ${totalCount} producto${totalCount===1?'':'s'} · ${orderTotal(order).toFixed(2)} €${isPaid && order.paymentMethod ? ' · '+escapeHtml(order.paymentMethod) : ''}</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+        ${timeDisplay}
+        <svg class="ticket-chevron" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  `;
+  return div;
+}
+function syncOrderStatus(order){
+  const allDone = order.items.length>0 && order.items.every(i=>i.status==='listo');
+  if(allDone){
+    if(order.orderStatus !== 'pagado') order.orderStatus = 'entregado';
+  } else {
+    order.orderStatus = 'abierta';
+  }
+}
+
+// ---------- Render principal ----------
+function render(){
+  const pendingOrders = state.orders.filter(orderHasPending).sort((a,b)=>a.ts-b.ts);
+  const doneItemsToday = state.orders.reduce((s,o)=>s+o.items.filter(i=>i.status==='listo').length, 0);
+  const activeTables = new Set(pendingOrders.filter(o=>o.tableId).map(o=>o.tableId)).size;
+  const maxWaitMin = pendingOrders.length ? Math.floor((Date.now()-pendingOrders[0].ts)/60000) : 0;
+
+  document.getElementById('statPending').textContent = pendingOrders.length;
+  document.getElementById('statTables').textContent = activeTables;
+  document.getElementById('statMaxWait').textContent = maxWaitMin + 'm';
+  document.getElementById('statDone').textContent = doneItemsToday;
+
+  const maxWaitNote = document.getElementById('statMaxWaitNote');
+  if(maxWaitMin>=10){ maxWaitNote.textContent='necesita atención'; maxWaitNote.className='kpi-note bad'; }
+  else if(maxWaitMin>=5){ maxWaitNote.textContent='vigilar'; maxWaitNote.className='kpi-note'; }
+  else { maxWaitNote.textContent='bajo control'; maxWaitNote.className='kpi-note good'; }
+
+  const dockBadge = document.getElementById('dockBadgeOrdenes');
+  if(pendingOrders.length>0){ dockBadge.style.display='block'; dockBadge.textContent=pendingOrders.length; }
+  else { dockBadge.style.display='none'; }
+
+  const search = (document.getElementById('searchInput').value || '').toLowerCase();
+  const filteredPending = search ? pendingOrders.filter(o=>orderMatchesSearch(o, search)) : pendingOrders;
+
+  const queueList = document.getElementById('queueList');
+  if(filteredPending.length===0){
+    queueList.innerHTML = '<div class="card empty-state">No hay pedidos pendientes.<br>La cola está limpia</div>';
+  } else {
+    queueList.innerHTML = '';
+    filteredPending.forEach(order=>{
+      const cls = urgencyClass(order.ts);
+      const pendingCount = orderPendingCount(order);
+      const totalCount = order.items.reduce((s,i)=>s+i.qty,0);
+
+      const div = document.createElement('div');
+      div.className = 'ticket ' + cls;
+      div.style.cursor = 'pointer';
+      div.onclick = ()=>openViewOrderModal(order.id);
+      div.innerHTML = `
+        <div class="ticket-top">
+          <div>
+            <div class="ticket-mesa">${order.tableName ? ('Mesa '+escapeHtml(order.tableName)) : 'Sin mesa asignada'}</div>
+            <div class="ticket-persona"><span class="order-number-badge">#${pad3(order.dailyNumber||0)}</span>${escapeHtml(order.customerName)}</div>
+            <div class="ticket-item">${pendingCount} de ${totalCount} producto${totalCount===1?'':'s'} pendiente${pendingCount===1?'':'s'} · ${orderTotal(order).toFixed(2)} €</div>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+            <div class="time-pill">${timeAgoLabel(order.ts)} min</div>
+            <svg class="ticket-chevron" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      `;
+      queueList.appendChild(div);
+    });
+  }
+
+  // ----- Entregados -----
+  const entregadosOrders = state.orders.filter(o=>o.orderStatus==='entregado').sort((a,b)=>a.ts-b.ts);
+  const filteredEntregados = search ? entregadosOrders.filter(o=>orderMatchesSearch(o, search)) : entregadosOrders;
+  const dockBadgeEntregados = document.getElementById('dockBadgeEntregados');
+  if(entregadosOrders.length>0){ dockBadgeEntregados.style.display='block'; dockBadgeEntregados.textContent=entregadosOrders.length; }
+  else { dockBadgeEntregados.style.display='none'; }
+
+  const entregadosList = document.getElementById('entregadosList');
+  if(filteredEntregados.length===0){
+    entregadosList.innerHTML = '<div class="card empty-state">Aún no hay órdenes entregadas pendientes de pago.</div>';
+  } else {
+    entregadosList.innerHTML = '';
+    filteredEntregados.forEach(order=>{
+      entregadosList.appendChild(buildOrderCard(order, 'Todo entregado · falta cobrar'));
+    });
+  }
+
+  // ----- Pagadas -----
+  const pagadasOrders = state.orders.filter(o=>o.orderStatus==='pagado').sort((a,b)=>(b.closedTs||b.ts)-(a.closedTs||a.ts));
+  const fromVal = document.getElementById('pagadasFromDate').value;
+  const toVal = document.getElementById('pagadasToDate').value;
+  let filteredPagadas = search ? pagadasOrders.filter(o=>orderMatchesSearch(o, search)) : pagadasOrders;
+  if(fromVal){ filteredPagadas = filteredPagadas.filter(o=> dateKeyFromTs(o.closedTs||o.ts) >= fromVal); }
+  if(toVal){ filteredPagadas = filteredPagadas.filter(o=> dateKeyFromTs(o.closedTs||o.ts) <= toVal); }
+
+  const pagadasTotal = filteredPagadas.reduce((s,o)=>s+orderTotal(o),0);
+  document.getElementById('pagadasSummary').textContent =
+    filteredPagadas.length + ' orden' + (filteredPagadas.length===1?'':'es') + ' · Total ' + pagadasTotal.toFixed(2) + ' €';
+
+  const pagadasList = document.getElementById('pagadasList');
+  if(filteredPagadas.length===0){
+    pagadasList.innerHTML = '<div class="card empty-state">No hay órdenes pagadas en ese rango de fechas.</div>';
+  } else {
+    pagadasList.innerHTML = '';
+    filteredPagadas.forEach(order=>{
+      pagadasList.appendChild(buildOrderCard(order, 'Pagada'));
+    });
+  }
+
+  // ----- Inventario -----
+  let lowCount = 0;
+  const inventoryList = document.getElementById('inventoryList');
+  inventoryList.innerHTML = '';
+  state.inventory.forEach(item=>{
+    const isLow = item.stock <= item.low;
+    if(isLow) lowCount++;
+    const row = document.createElement('div');
+    row.className = 'inv-item';
+    row.innerHTML = `
+      <div>
+        <div class="inv-name">${escapeHtml(item.name)}</div>
+        ${isLow ? '<span class="inv-low">Stock bajo</span>' : `<span class="mesa-meta" style="margin-top:2px;">min. ${item.low} ${escapeHtml(item.unit)}</span>`}
+      </div>
+      <div class="inv-stepper">
+        <button onclick="adjustStock('${item.id}', -1)">−</button>
+        <span class="inv-count">${item.stock}</span>
+        <button onclick="adjustStock('${item.id}', 1)">+</button>
+      </div>
+    `;
+    inventoryList.appendChild(row);
+  });
+  const dockBadgeInv = document.getElementById('dockBadgeInv');
+  if(lowCount>0){ dockBadgeInv.style.display='block'; dockBadgeInv.textContent=lowCount; }
+  else { dockBadgeInv.style.display='none'; }
+
+  if(viewingOrderId) renderViewOrderModal();
+}
+
+setInterval(()=>{
+  if(!currentUser) return;
+  if(document.getElementById('screen-ordenes').classList.contains('active')) render();
+}, 1000);
+
+setInterval(async ()=>{
+  if(!currentUser) return;
+  const active = document.activeElement;
+  const isTyping = active && (active.tagName==='INPUT');
+  if(isTyping) return;
+  await loadState();
+  render();
+}, 4000);
+
+document.addEventListener('keydown', (e)=>{
+  if(document.getElementById('loginScreen').style.display === 'none') return;
+  if(e.key >= '0' && e.key <= '9') pinPress(e.key);
+  else if(e.key === 'Backspace') pinBackspace();
+});
+
+async function bootApp(){
+  await loadState();
+  render();
+}
+
+(async function checkSessionOnLoad(){
+  const hasSession = await checkExistingSession();
+  if(hasSession){
+    enterApp();
+  }
+  // si no hay sesión, se queda en la pantalla de login esperando el PIN
+})();
+</script>
+</body>
+</html>
