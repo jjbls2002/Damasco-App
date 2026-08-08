@@ -799,12 +799,9 @@
 
 <script>
 const STORAGE_KEY = 'cafe-comandas-v4';
-const SESSION_KEY = 'cafe-comandas-session';
 
-// Cuentas válidas. Para añadir más camareros/encargados, añade otro objeto aquí.
-const ACCOUNTS = [
-  { id: 'u1', pin: '789', name: 'Usuario 1', initials: 'U1' }
-];
+// Las cuentas y sus PINs viven solo en el backend (server.js) — el frontend
+// nunca las ve; solo recibe el resultado de validar un PIN contra /api/pin-login.
 
 let currentUser = null;
 let pinBuffer = '';
@@ -826,37 +823,37 @@ function pinBackspace(){
   document.getElementById('pinError').textContent = '';
 }
 async function checkPin(){
-  const account = ACCOUNTS.find(a => a.pin === pinBuffer);
-  if(account){
-    await loginAs(account);
-  } else {
-    document.getElementById('pinError').textContent = 'Clave incorrecta';
-    const dots = document.getElementById('pinDots');
-    dots.classList.add('shake');
-    setTimeout(()=>dots.classList.remove('shake'), 350);
-    pinBuffer = '';
-    renderPinDots();
-  }
-}
-async function loginAs(account){
-  currentUser = account;
+  const pin = pinBuffer;
+  pinBuffer = '';
   try{
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ loggedIn: true, userId: account.id }));
-  }catch(e){ /* si falla el guardado, la sesión simplemente no persistirá al recargar */ }
-  enterApp();
+    const res = await fetch('/api/pin-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin })
+    });
+    if(res.ok){
+      const data = await res.json();
+      currentUser = data.account;
+      renderPinDots();
+      enterApp();
+      return;
+    }
+  }catch(e){ /* error de red: se trata igual que PIN incorrecto */ }
+  document.getElementById('pinError').textContent = 'Clave incorrecta';
+  const dots = document.getElementById('pinDots');
+  dots.classList.add('shake');
+  setTimeout(()=>dots.classList.remove('shake'), 350);
+  renderPinDots();
 }
 async function checkExistingSession(){
   try{
-    const raw = localStorage.getItem(SESSION_KEY);
-    if(raw){
-      const session = JSON.parse(raw);
-      const account = ACCOUNTS.find(a => a.id === session.userId);
-      if(session.loggedIn && account){
-        currentUser = account;
-        return true;
-      }
+    const res = await fetch('/api/me');
+    if(res.ok){
+      const data = await res.json();
+      currentUser = data.account;
+      return true;
     }
-  }catch(e){ /* no hay sesión guardada todavía */ }
+  }catch(e){ /* no hay sesión válida todavía */ }
   return false;
 }
 function toggleAvatarMenu(e){
@@ -866,7 +863,7 @@ function toggleAvatarMenu(e){
 }
 async function handleLogoutClick(){
   document.getElementById('avatarMenu').classList.remove('open');
-  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+  try{ await fetch('/api/logout', { method: 'POST' }); }catch(e){}
   currentUser = null;
   pinBuffer = '';
   renderPinDots();

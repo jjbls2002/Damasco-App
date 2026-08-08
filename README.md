@@ -9,9 +9,11 @@ desplegado gratis en [Render](https://render.com).
 
 - **Frontend**: un único archivo `public/index.html` (HTML/CSS/JS), servido tal cual
   por Express. Guarda su estado llamando a `GET /api/state` y `POST /api/state`.
-- **Backend**: `server.js`, Express + `pg` (node-postgres). Protegido con una
-  contraseña compartida a nivel de servidor (independiente del PIN de camarero,
-  que sigue viviendo en el frontend).
+- **Backend**: `server.js`, Express + `pg` (node-postgres). La autenticación es el
+  PIN de camarero/encargado (ej. `789`), pero la lista de cuentas y PINs vive
+  únicamente en el servidor (array `ACCOUNTS` en `server.js`) — el frontend nunca
+  la recibe, solo el resultado de validar un PIN contra `POST /api/pin-login`.
+  Al validarse, se emite una cookie de sesión firmada que protege `/api/state`.
 - **Base de datos**: una sola tabla `app_state` con una única fila (`id = 1`) que
   contiene todo el estado dinámico de la app como JSON.
 
@@ -73,7 +75,6 @@ En la sección **Environment** del servicio, añade:
 | Variable         | Valor                                                              |
 |------------------|---------------------------------------------------------------------|
 | `DATABASE_URL`   | El connection string *pooled* copiado de Neon                      |
-| `APP_PASSWORD`   | Una contraseña fuerte que compartirás con tu equipo                |
 | `SESSION_SECRET` | Una cadena aleatoria larga (por ejemplo, generada con `openssl rand -hex 32`) |
 | `NODE_ENV`       | `production` (ya viene definido en `render.yaml`)                  |
 
@@ -86,16 +87,18 @@ variables de entorno en Render (y en tu `.env` local, que está ignorado por git
 
 ## 4. Uso
 
-1. Abre la URL de Render. Verás un formulario simple pidiendo la contraseña de
-   servidor (`APP_PASSWORD`) — esta protección evita que cualquiera en internet
-   acceda a la app.
-2. Tras introducirla correctamente, se guarda una cookie de sesión firmada y se
-   carga `public/index.html`, que a su vez muestra su propia pantalla de PIN
-   para identificar al camarero/encargado (sin relación con la contraseña de
-   servidor).
+1. Abre la URL de Render. Verás directamente la pantalla de PIN de la app
+   (`public/index.html` se sirve sin ninguna barrera previa).
+2. Introduce el PIN de camarero/encargado (ej. `789`). El navegador lo envía a
+   `POST /api/pin-login`; el servidor lo valida contra el array `ACCOUNTS` de
+   `server.js` (que nunca se expone al frontend) y, si coincide, emite una
+   cookie de sesión firmada que protege el resto de la app.
 3. A partir de aquí, la app funciona igual que antes: creación de órdenes,
    ciclo Órdenes → Entregados → Pagadas, inventario, etc. — solo que ahora todo
    se guarda en Postgres (Neon) en vez de en memoria del navegador.
+
+Para añadir o cambiar camareros/encargados, edita el array `ACCOUNTS` en
+`server.js` (no en el frontend) y vuelve a desplegar.
 
 ## 5. Ejecutar en local
 
@@ -104,7 +107,7 @@ Requiere Node.js 18+.
 ```bash
 npm install
 cp .env.example .env
-# Edita .env con tu DATABASE_URL de Neon, y un APP_PASSWORD / SESSION_SECRET propios
+# Edita .env con tu DATABASE_URL de Neon y un SESSION_SECRET propio
 npm start
 ```
 
@@ -114,13 +117,17 @@ en producción en Render, con `NODE_ENV=production`, sí se marca `Secure`.
 
 ## Seguridad
 
-- La contraseña de servidor se compara con `crypto.timingSafeEqual` para evitar
-  ataques de timing.
+- El PIN se compara con `crypto.timingSafeEqual` para evitar ataques de timing.
+  Aun así, un PIN de 3 dígitos tiene solo 1000 combinaciones posibles — es
+  bastante más débil que una contraseña larga. `POST /api/pin-login` tiene un
+  límite propio y estricto de 10 intentos por minuto por IP para mitigar
+  fuerza bruta, pero si en algún momento quieres más seguridad, lo más fácil es
+  usar PINs más largos en el array `ACCOUNTS` de `server.js`.
 - La cookie de sesión es `httpOnly`, `SameSite=Strict` y (en producción) `Secure`,
   y va firmada con `SESSION_SECRET`.
 - `helmet` añade cabeceras HTTP seguras por defecto.
-- `express-rate-limit` limita `/api/login` y `/api/state` a ~60 peticiones por
-  minuto por IP.
+- `express-rate-limit` limita `/api/state` a ~60 peticiones por minuto por IP,
+  y `/api/pin-login` a 10 por minuto por IP.
 - Los payloads JSON están limitados a 2 MB.
 - Todas las consultas a Postgres usan parámetros (`$1`, `$2`...); nunca se
   concatenan strings del usuario en SQL.
