@@ -380,6 +380,18 @@
 
   .toast { position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 13px; opacity: 0; transition: all .25s ease; pointer-events: none; z-index: 80; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .queue-banner {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%) translateY(-24px);
+    background: var(--teal-3); color: #fff; padding: 12px 14px 12px 16px; border-radius: 12px;
+    font-weight: 600; font-size: 13.5px; display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.18); opacity: 0; pointer-events: none;
+    transition: all .25s ease; z-index: 85; max-width: min(90vw, 420px);
+  }
+  .queue-banner.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+  .queue-banner-close {
+    background: rgba(255,255,255,.22); border: none; color: #fff; width: 22px; height: 22px;
+    border-radius: 50%; font-size: 12px; line-height: 1; cursor: pointer; flex-shrink: 0;
+  }
 
   /* ---------- Login ---------- */
   #loginScreen {
@@ -646,15 +658,8 @@
         <div class="dot" data-step="3"></div>
       </div>
 
-      <!-- Paso 1: nombre -->
-      <div id="wizardStep1">
-        <input id="customerNameInput" class="name-input-big" placeholder="Nombre del cliente" autocomplete="off">
-        <button class="btn-primary" id="step1NextBtn" style="margin-top:16px;" disabled onclick="goToStep(2)">Continuar</button>
-      </div>
-
-      <!-- Paso 2: productos -->
-      <div id="wizardStep2" style="display:none;">
-        <button class="btn-back" onclick="goToStep(1)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Volver</button>
+      <!-- Paso 1: productos -->
+      <div id="wizardStepProducts">
         <div class="search-box">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="productSearch" placeholder="Buscar producto..." oninput="renderProductResults()">
@@ -688,12 +693,12 @@
           </div>
         </div>
 
-        <button class="btn-primary" id="step2NextBtn" style="margin-top:16px;" disabled onclick="goToStep(3)">Continuar</button>
+        <button class="btn-primary" id="productsNextBtn" style="margin-top:16px;" disabled onclick="goToStep(2)">Continuar</button>
       </div>
 
-      <!-- Paso 3: mesa -->
-      <div id="wizardStep3" style="display:none;">
-        <button class="btn-back" onclick="goToStep(2)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Volver</button>
+      <!-- Paso 2: mesa -->
+      <div id="wizardStepMesa" style="display:none;">
+        <button class="btn-back" onclick="goToStep(1)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Volver</button>
 
         <div class="mesa-choice-grid">
           <div class="mesa-choice-card" id="choiceMesaSi" onclick="chooseMesaOption('si')">
@@ -715,7 +720,14 @@
         </div>
 
         <div class="order-summary" id="orderSummary"></div>
-        <button class="btn-primary" id="createOrderBtn" disabled onclick="confirmOrder()">Crear orden</button>
+        <button class="btn-primary" id="mesaNextBtn" style="margin-top:16px;" disabled onclick="goToStep(3)">Continuar</button>
+      </div>
+
+      <!-- Paso 3: nombre -->
+      <div id="wizardStepName" style="display:none;">
+        <button class="btn-back" onclick="goToStep(2)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Volver</button>
+        <input id="customerNameInput" class="name-input-big" placeholder="Nombre del cliente" autocomplete="off">
+        <button class="btn-primary" id="createOrderBtn" style="margin-top:16px;" disabled onclick="confirmOrder()">Crear orden</button>
       </div>
     </div>
   </div>
@@ -793,6 +805,11 @@
   </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="queue-banner" id="queueBanner">
+  <span id="queueBannerText"></span>
+  <button class="queue-banner-close" onclick="hideQueueBanner()" aria-label="Cerrar aviso">✕</button>
+</div>
 
   </div>
 <!-- fin appRoot -->
@@ -1117,6 +1134,22 @@ function showToast(msg){
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 1800);
 }
+let queueBannerTimeout = null;
+function showQueueBanner(dailyNumber, ordersAhead){
+  const banner = document.getElementById('queueBanner');
+  const text = document.getElementById('queueBannerText');
+  const aheadTxt = ordersAhead>0
+    ? `Tienes ${ordersAhead} pedido${ordersAhead===1?'':'s'} por delante`
+    : 'No hay pedidos por delante, ¡el tuyo va primero!';
+  text.textContent = `Orden #${pad3(dailyNumber)} creada · ${aheadTxt}`;
+  banner.classList.add('show');
+  clearTimeout(queueBannerTimeout);
+  queueBannerTimeout = setTimeout(hideQueueBanner, 8000);
+}
+function hideQueueBanner(){
+  document.getElementById('queueBanner').classList.remove('show');
+  clearTimeout(queueBannerTimeout);
+}
 function escapeHtml(str){
   const d = document.createElement('div');
   d.textContent = str;
@@ -1161,7 +1194,7 @@ function openOrderModal(){
   document.getElementById('productSearch').value = '';
   showStep(1);
   document.getElementById('orderModal').classList.add('open');
-  setTimeout(()=>document.getElementById('customerNameInput').focus(), 150);
+  setTimeout(()=>document.getElementById('productSearch').focus(), 150);
 }
 function closeOrderModal(){
   document.getElementById('orderModal').classList.remove('open');
@@ -1169,34 +1202,33 @@ function closeOrderModal(){
 }
 function showStep(n){
   wizardStep = n;
-  document.getElementById('wizardStep1').style.display = n===1 ? 'block' : 'none';
-  document.getElementById('wizardStep2').style.display = n===2 ? 'block' : 'none';
-  document.getElementById('wizardStep3').style.display = n===3 ? 'block' : 'none';
+  document.getElementById('wizardStepProducts').style.display = n===1 ? 'block' : 'none';
+  document.getElementById('wizardStepMesa').style.display = n===2 ? 'block' : 'none';
+  document.getElementById('wizardStepName').style.display = n===3 ? 'block' : 'none';
   document.querySelectorAll('#stepDots .dot').forEach(d=>{
     const s = parseInt(d.dataset.step,10);
     d.classList.remove('done','current');
     if(s < n) d.classList.add('done');
     if(s === n) d.classList.add('current');
   });
-  const titles = {1:'Nueva orden · Cliente', 2:'Nueva orden · Productos', 3:'Nueva orden · Mesa'};
+  const titles = {1:'Nueva orden · Productos', 2:'Nueva orden · Mesa', 3:'Nueva orden · Cliente'};
   document.getElementById('wizardTitle').textContent = titles[n];
-  if(n===2){ renderProductResults(); renderOrderSummary(); }
-  if(n===3) renderWizardStep3();
+  if(n===1){ renderProductResults(); renderOrderSummary(); }
+  if(n===2) renderMesaStep();
+  if(n===3) updateNameStepState();
 }
 function goToStep(n){
-  if(n===2){
-    draft.customerName = document.getElementById('customerNameInput').value.trim();
-    if(!draft.customerName) return;
-  }
-  if(n===3 && draft.items.length===0) return;
+  if(n===2 && draft.items.length===0) return;
+  if(n===3 && !(draft.mesaOption==='no' || (draft.mesaOption==='si' && draft.tableId))) return;
   showStep(n);
 }
 
 document.getElementById('customerNameInput').addEventListener('input', (e)=>{
-  document.getElementById('step1NextBtn').disabled = e.target.value.trim().length===0;
+  draft.customerName = e.target.value.trim();
+  updateNameStepState();
 });
 document.getElementById('customerNameInput').addEventListener('keydown', (e)=>{
-  if(e.key==='Enter' && e.target.value.trim()) goToStep(2);
+  if(e.key==='Enter' && !document.getElementById('createOrderBtn').disabled) confirmOrder();
 });
 
 // ---------- Paso 2: productos ----------
@@ -1386,17 +1418,17 @@ function renderOrderSummary(){
     });
   }
   document.getElementById('orderTotalValue').textContent = draftTotal().toFixed(2) + ' €';
-  document.getElementById('step2NextBtn').disabled = draft.items.length===0;
+  document.getElementById('productsNextBtn').disabled = draft.items.length===0;
 }
 
-// ---------- Paso 3: mesa ----------
+// ---------- Paso 2: mesa ----------
 function chooseMesaOption(opt){
   draft.mesaOption = opt;
   draft.tableId = null;
   document.getElementById('choiceMesaSi').classList.toggle('selected', opt==='si');
   document.getElementById('choiceMesaNo').classList.toggle('selected', opt==='no');
   document.getElementById('mesaPickerArea').style.display = opt==='si' ? 'block' : 'none';
-  updateCreateOrderState();
+  updateMesaStepState();
 }
 function addTableInWizard(){
   const input = document.getElementById('wizardNewTableInput');
@@ -1407,13 +1439,13 @@ function addTableInWizard(){
   input.value = '';
   draft.tableId = t.id;
   saveState();
-  renderWizardStep3();
+  renderMesaStep();
 }
 function selectTableInWizard(id){
   draft.tableId = id;
-  renderWizardStep3();
+  renderMesaStep();
 }
-function renderWizardStep3(){
+function renderMesaStep(){
   document.getElementById('choiceMesaSi').classList.toggle('selected', draft.mesaOption==='si');
   document.getElementById('choiceMesaNo').classList.toggle('selected', draft.mesaOption==='no');
   document.getElementById('mesaPickerArea').style.display = draft.mesaOption==='si' ? 'block' : 'none';
@@ -1430,18 +1462,26 @@ function renderWizardStep3(){
   if(state.tables.length===0){
     chips.innerHTML = '<div class="empty-hint">Aún no hay mesas creadas, añade una abajo.</div>';
   }
-  updateCreateOrderState();
+  updateMesaStepState();
 }
-function updateCreateOrderState(){
+function updateMesaStepState(){
   const summary = document.getElementById('orderSummary');
-  const canCreate = draft.mesaOption==='no' || (draft.mesaOption==='si' && draft.tableId);
-  document.getElementById('createOrderBtn').disabled = !canCreate;
+  const canContinue = draft.mesaOption==='no' || (draft.mesaOption==='si' && draft.tableId);
+  document.getElementById('mesaNextBtn').disabled = !canContinue;
   if(!draft.mesaOption){ summary.style.display='none'; return; }
   const table = draft.tableId ? state.tables.find(t=>t.id===draft.tableId) : null;
   const mesaTxt = draft.mesaOption==='no' ? 'Sin mesa asignada' : (table ? 'Mesa '+table.name : 'elige una mesa');
   const totalUnits = draft.items.reduce((s,i)=>s+i.qty,0);
   summary.style.display = 'block';
-  summary.textContent = `${draft.customerName} · ${totalUnits} producto${totalUnits===1?'':'s'} · ${mesaTxt} · Total ${draftTotal().toFixed(2)} €`;
+  summary.textContent = `${totalUnits} producto${totalUnits===1?'':'s'} · ${mesaTxt} · Total ${draftTotal().toFixed(2)} €`;
+}
+
+// ---------- Paso 3: nombre ----------
+function updateNameStepState(){
+  const canCreate = draft.items.length>0
+    && (draft.mesaOption==='no' || (draft.mesaOption==='si' && draft.tableId))
+    && draft.customerName.length>0;
+  document.getElementById('createOrderBtn').disabled = !canCreate;
 }
 
 function confirmOrder(){
@@ -1451,6 +1491,7 @@ function confirmOrder(){
   const now = Date.now();
   const dateKey = dateKeyFromTs(now);
   const dailyNumber = nextDailyNumber(dateKey);
+  const ordersAhead = state.orders.filter(orderHasPending).length;
   state.orders.push({
     id: uid(),
     dailyNumber: dailyNumber,
@@ -1466,7 +1507,7 @@ function confirmOrder(){
     }))
   });
   saveState();
-  showToast('Orden #'+pad3(dailyNumber)+' creada para '+draft.customerName);
+  showQueueBanner(dailyNumber, ordersAhead);
   closeOrderModal();
   render();
 }
